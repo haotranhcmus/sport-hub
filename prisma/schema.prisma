@@ -1,0 +1,441 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model SizeGuide {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  columns     Json
+  rows        Json
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  categories  Category[]
+  products    Product[]
+
+  @@index([name])
+}
+
+model Category {
+  id          String             @id @default(uuid())
+  name        String
+  slug        String             @unique
+  imageUrl    String?
+  description String?
+  parentId    String?
+  sizeGuideId String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  parent      Category?          @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[]         @relation("CategoryHierarchy")
+  sizeGuide   SizeGuide?         @relation(fields: [sizeGuideId], references: [id])
+  products    Product[]
+  attributes  ProductAttribute[] @relation("CategoryToProductAttribute")
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([sizeGuideId])
+}
+
+model Brand {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  logoUrl   String?
+  country   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@index([slug])
+}
+
+model ProductAttribute {
+  id         String     @id @default(uuid())
+  name       String
+  code       String     @unique
+  type       String
+  values     Json
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[] @relation("CategoryToProductAttribute")
+
+  @@index([code])
+  @@index([type])
+}
+
+model Product {
+  id               String           @id @default(uuid())
+  productCode      String           @unique
+  modelCode        String?
+  name             String
+  slug             String           @unique
+  description      String
+  costPrice        Float?
+  basePrice        Float
+  promotionalPrice Float?
+  thumbnailUrl     String
+  status           ProductStatus    @default(ACTIVE)
+  categoryId       String
+  brandId          String
+  totalSold        Int              @default(0)
+  allowReturn      Boolean          @default(true)
+  returnPeriod     Int              @default(7)
+  freeShipping     Boolean          @default(false)
+  attributes       Json?
+  sizeGuideId      String?
+  condition        String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  orderItems       OrderItem[]
+  brand            Brand            @relation(fields: [brandId], references: [id])
+  category         Category         @relation(fields: [categoryId], references: [id])
+  sizeGuide        SizeGuide?       @relation(fields: [sizeGuideId], references: [id])
+  variants         ProductVariant[]
+  reviews          Review[]
+
+  @@index([slug])
+  @@index([productCode])
+  @@index([status])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([sizeGuideId])
+}
+
+model ProductVariant {
+  id              String   @id @default(uuid())
+  productId       String
+  sku             String   @unique
+  size            String
+  color           String
+  stockQuantity   Int      @default(0)
+  priceAdjustment Float    @default(0)
+  imageUrl        String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([sku])
+  @@index([productId])
+  @@index([status])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  userName  String
+  rating    Int
+  comment   String
+  avatarUrl String?
+  images    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([rating])
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  fullName   String
+  phone      String?
+  role       UserRole    @default(CUSTOMER)
+  status     String      @default("active")
+  staffId    String?     @unique
+  idCard     String?
+  position   String?
+  department String?
+  avatarUrl  String?
+  joinDate   DateTime?
+  addresses  Json?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  orders     Order[]
+  systemLogs SystemLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([staffId])
+}
+
+model Order {
+  id              String          @id @default(uuid())
+  orderCode       String          @unique
+  userId          String?
+  customerName    String
+  customerPhone   String
+  customerAddress String
+  customerNotes   String?
+  customerType    String          @default("guest")
+  totalAmount     Float
+  shippingFee     Float           @default(0)
+  status          OrderStatus     @default(PENDING_PAYMENT)
+  paymentMethod   PaymentMethod   @default(COD)
+  paymentStatus   PaymentStatus   @default(PENDING)
+  deliveryDate    DateTime?
+  courierName     String?
+  trackingNumber  String?
+  deliveryPerson  String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  user            User?           @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  returnRequests  ReturnRequest[]
+
+  @@index([orderCode])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([customerPhone])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id             String           @id @default(uuid())
+  orderId        String
+  productId      String
+  productName    String
+  quantity       Int
+  unitPrice      Float
+  color          String?
+  size           String?
+  thumbnailUrl   String?
+  isReviewed     Boolean          @default(false)
+  reviewInfo     Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  returnStatus   ItemReturnStatus @default(NONE)
+  order          Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product          @relation(fields: [productId], references: [id])
+  returnRequests ReturnRequest[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([returnStatus])
+}
+
+model ReturnRequest {
+  id              String              @id @default(uuid())
+  requestCode     String              @unique
+  orderId         String
+  orderItemId     String
+  type            ReturnType
+  status          ReturnRequestStatus @default(PENDING)
+  reason          String
+  evidenceImages  String[]
+  refundAmount    Float?
+  bankInfo        Json?
+  exchangeToSize  String?
+  exchangeToColor String?
+  newOrderId      String?
+  adminNotes      String?
+  processedBy     String?
+  processedAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem           @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([status])
+  @@index([type])
+  @@index([requestCode])
+  @@index([createdAt])
+}
+
+model Supplier {
+  id            String       @id @default(uuid())
+  name          String
+  taxCode       String?
+  contactPerson String
+  phone         String
+  email         String?
+  address       String?
+  status        String       @default("active")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  stockEntries  StockEntry[]
+
+  @@index([name])
+  @@index([status])
+}
+
+model StockEntry {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  supplierId   String
+  supplierName String
+  date         DateTime
+  totalAmount  Float
+  status       String   @default("completed")
+  items        Json
+  actorName    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  supplier     Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([code])
+  @@index([supplierId])
+  @@index([date])
+  @@index([status])
+}
+
+model StockIssue {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  date           DateTime
+  status         String   @default("completed")
+  items          Json
+  actorName      String
+  type           String   @default("sales")
+  totalAmount    Float
+  orderCodes     Json?
+  warehouseName  String?
+  customerName   String?
+  courierName    String?
+  trackingNumber String?
+  deliveryPerson String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([code])
+  @@index([date])
+  @@index([status])
+  @@index([type])
+}
+
+model Stocktake {
+  id               String   @id @default(uuid())
+  code             String   @unique
+  date             DateTime
+  status           String   @default("draft")
+  items            Json
+  totalDiscrepancy Int      @default(0)
+  auditorName      String
+  scope            String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([code])
+  @@index([date])
+  @@index([status])
+}
+
+model SystemLog {
+  id          String          @id @default(uuid())
+  actorId     String
+  actorName   String
+  actionType  SystemLogAction
+  targetId    String
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String
+  description String
+  timestamp   DateTime        @default(now())
+  actor       User            @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([actionType])
+  @@index([timestamp])
+}
+
+model SystemConfig {
+  id                String   @id @default(uuid())
+  websiteTitle      String
+  logoUrl           String
+  hotline           String
+  contactEmail      String
+  address           String
+  vatRate           Float    @default(8)
+  lowStockThreshold Int      @default(5)
+  returnPeriodDays  Int      @default(7)
+  banners           Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PENDING_CONFIRMATION
+  PACKING
+  SHIPPING
+  COMPLETED
+  CANCELLED
+  DELIVERY_FAILED
+  RETURN_REQUESTED
+  RETURN_PROCESSING
+  RETURN_COMPLETED
+}
+
+enum UserRole {
+  ADMIN
+  SALES
+  WAREHOUSE
+  CUSTOMER
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PENDING
+  PENDING_REFUND
+  REFUNDED
+  PARTIAL_REFUNDED
+}
+
+enum ReturnType {
+  EXCHANGE
+  REFUND
+}
+
+enum ReturnRequestStatus {
+  PENDING
+  APPROVED
+  SHIPPING_BACK
+  RECEIVED
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum ItemReturnStatus {
+  NONE
+  HAS_REQUEST
+  EXCHANGED
+  REFUNDED
+  REJECTED
+}
+
+enum SystemLogAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  APPROVE
+  REJECT
+  PAYMENT
+  STOCK_CHANGE
+  STOCK_ADJUST
+}
