@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../services";
 import {
   Product,
@@ -11,6 +12,7 @@ import {
 } from "../types";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useProductDetail, useProducts } from "../hooks/useProductsQuery";
 import {
   ShoppingCart,
   Star,
@@ -58,14 +60,35 @@ export const ProductDetailPage = () => {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  const [product, setProduct] = useState<Product | null>(null);
+  // Use TanStack Query for product detail with caching
+  const {
+    data: product = null,
+    isLoading: loading,
+    error: queryError,
+  } = useProductDetail(slug || "");
+
   const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(null);
   const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
   const [activeImage, setActiveImage] = useState<string>("");
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showSizeGuideModal, setShowSizeGuideModal] = useState(false);
+
+  // Fetch all products for related products
+  const { data: allProducts = [] } = useProducts();
+  const relatedProducts = useMemo(
+    () =>
+      product
+        ? allProducts
+            .filter(
+              (p) =>
+                p.categoryId === product.categoryId &&
+                p.id !== product.id &&
+                p.status === ProductStatus.ACTIVE
+            )
+            .slice(0, 4)
+        : [],
+    [product, allProducts]
+  );
 
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -78,53 +101,51 @@ export const ProductDetailPage = () => {
 
   const isStaff = user && user.role !== "CUSTOMER";
 
+  // Validate product status
   useEffect(() => {
-    const fetchData = async () => {
-      if (!slug) return;
-      setLoading(true);
-      setError("");
+    if (product) {
+      if (
+        product.status === ProductStatus.DRAFT ||
+        product.status === ProductStatus.INACTIVE ||
+        product.status === ProductStatus.ARCHIVED
+      ) {
+        setError("Sản phẩm này hiện không còn kinh doanh.");
+      } else {
+        setError("");
+        setActiveImage(
+          product.thumbnailUrl || "https://via.placeholder.com/600"
+        );
+      }
+    }
+  }, [product]);
+
+  // Fetch size guide and attributes when product loads
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      if (!product?.id) return;
+
       try {
-        const data = await api.products.getDetail(slug);
-        if (
-          data.status === ProductStatus.DRAFT ||
-          data.status === ProductStatus.INACTIVE ||
-          data.status === ProductStatus.ARCHIVED
-        ) {
-          setError("Sản phẩm này hiện không còn kinh doanh.");
-          setLoading(false);
-          return;
-        }
-        setProduct(data);
-        setActiveImage(data.thumbnailUrl || "https://via.placeholder.com/600");
-
-        const sg = await api.products.getSizeGuide(data.id);
+        const [sg, attrs] = await Promise.all([
+          api.products.getSizeGuide(product.id),
+          api.attributes.list(),
+        ]);
         setSizeGuide(sg);
-
-        const attrs = await api.attributes.list();
         setAttributes(attrs);
 
-        if (data.variants && data.variants.length > 0) {
+        if (product.variants && product.variants.length > 0) {
           const availableVariant =
-            data.variants.find((v) => v.stockQuantity > 0) || data.variants[0];
+            product.variants.find((v) => v.stockQuantity > 0) ||
+            product.variants[0];
           setSelectedColor(availableVariant.color);
           setSelectedSize(availableVariant.size);
         }
-        if (data.categoryId) {
-          const related = await api.products.getRelated(data.categoryId);
-          setRelatedProducts(
-            related.filter(
-              (p) => p.id !== data.id && p.status === ProductStatus.ACTIVE
-            )
-          );
-        }
       } catch (err) {
-        setError("Không tìm thấy trang (404)");
-      } finally {
-        setLoading(false);
+        console.error("Error fetching metadata:", err);
       }
     };
-    fetchData();
-  }, [slug]);
+
+    fetchMetadata();
+  }, [product?.id]);
 
   const selectedVariant = useMemo(() => {
     return (

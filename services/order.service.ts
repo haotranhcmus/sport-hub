@@ -26,6 +26,22 @@ export const orderService = {
     return data || [];
   },
 
+  // Alias for list
+  getAll: async (): Promise<Order[]> => {
+    const { data, error } = await supabase
+      .from("Order")
+      .select(
+        `
+          *,
+          items:OrderItem(*)
+        `
+      )
+      .order("createdAt", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+
   getDetail: async (code: string): Promise<Order | null> => {
     const { data, error } = await supabase
       .from("Order")

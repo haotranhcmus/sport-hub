@@ -46,6 +46,13 @@ import {
 } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import { InputField } from "./SharedUI";
+import { useProducts } from "../../hooks/useProductsQuery";
+import {
+  useCategories,
+  useBrands,
+  useAttributes,
+  useSizeGuides,
+} from "../../hooks/useInventoryQuery";
 
 const handleFileRead = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -59,35 +66,21 @@ const handleFileRead = (file: File): Promise<string> => {
 export const ProductManager = () => {
   const { user: currentUser } = useAuth();
   const [view, setView] = useState<"list" | "form">("list");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
-  const [sizeGuides, setSizeGuides] = useState<SizeGuide[]>([]);
-  const [loading, setLoading] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchData = async () => {
-    setLoading(true);
-    const [p, c, b, a, sgs] = await Promise.all([
-      api.products.list(),
-      api.categories.list(),
-      api.brands.list(),
-      api.attributes.list(),
-      api.sizeGuides.list(),
-    ]);
-    setProducts(p);
-    setCategories(c);
-    setBrands(b);
-    setAttributes(a);
-    setSizeGuides(sgs);
-    setLoading(false);
-  };
+  // Use TanStack Query for all data fetching
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    refetch: refetchProducts,
+  } = useProducts();
+  const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
+  const { data: attributes = [] } = useAttributes();
+  const { data: sizeGuides = [] } = useSizeGuides();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const loading = productsLoading;
 
   const handleEdit = (product: Product) => {
     setActiveProduct(product);
@@ -115,7 +108,7 @@ export const ProductManager = () => {
         sizeGuides={sizeGuides}
         onBack={() => {
           setView("list");
-          fetchData();
+          refetchProducts();
         }}
       />
     );

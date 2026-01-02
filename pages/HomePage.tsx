@@ -1,20 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../services";
 import { Category, Product } from "../types";
 import { ArrowRight, Search } from "lucide-react";
 import { ProductCard } from "../components/features/product/ProductCard";
+import { useProducts } from "../hooks/useProductsQuery";
 
 export const HomePage = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  // Use TanStack Query for automatic caching
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.categories.list(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-  useEffect(() => {
-    api.categories.list().then(setCategories);
-    api.products.list().then((products) => {
-      setFeaturedProducts(products.slice(0, 4));
-    });
-  }, []);
+  const { data: allProducts = [], isLoading: productsLoading } = useProducts();
+
+  const featuredProducts = useMemo(
+    () => allProducts.slice(0, 4),
+    [allProducts]
+  );
 
   return (
     <div className="space-y-12">

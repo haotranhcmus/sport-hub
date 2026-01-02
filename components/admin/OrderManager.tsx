@@ -20,18 +20,21 @@ import {
 import { api } from "../../services";
 import { AdminOrderDetailModal } from "./AdminOrderDetailModal";
 import { getOrderStatusLabel } from "../../utils/helpers";
+import { useOrders } from "../../hooks/useOrdersQuery";
 
 type StatusGroup = "all" | "new" | "processing" | "finished" | "support";
 
 export const OrderListManager = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Use TanStack Query for orders
+  const { data: orders = [], isLoading: loading, refetch } = useOrders();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
   // Modal State
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Filters State
   const [activeTab, setActiveTab] = useState<StatusGroup>("all");
@@ -40,9 +43,7 @@ export const OrderListManager = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  // No need for manual fetchOrders - TanStack Query handles it
 
   useEffect(() => {
     setCurrentPage(1);
@@ -56,38 +57,28 @@ export const OrderListManager = () => {
     pageSize,
   ]);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const res = await api.orders.list();
-      setOrders(res);
-
-      // Nếu đang mở modal, cập nhật lại dữ liệu viewingOrder từ danh sách mới
-      if (viewingOrder) {
-        const updated = res.find((o) => o.id === viewingOrder.id);
-        if (updated) setViewingOrder(JSON.parse(JSON.stringify(updated)));
-      }
-    } catch (err) {
-      console.error("Lỗi khi tải đơn hàng", err);
-    } finally {
-      setLoading(false);
+  // Update viewingOrder when orders change
+  useEffect(() => {
+    if (viewingOrder && orders.length > 0) {
+      const updated = orders.find((o) => o.id === viewingOrder.id);
+      if (updated) setViewingOrder(JSON.parse(JSON.stringify(updated)));
     }
-  };
+  }, [orders]);
 
   const handleQuickConfirm = async (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
     if (!confirm("Xác nhận đơn hàng này và chuyển sang Đóng gói?")) return;
-    setLoading(true);
+    setActionLoading(true);
     try {
       const res = await api.orders.updateOrderStatus(
         orderId,
         OrderStatus.PACKING
       );
-      if (res) await fetchOrders();
+      if (res) await refetch();
     } catch (err) {
       alert("Lỗi xử lý.");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -379,7 +370,7 @@ export const OrderListManager = () => {
             <FilterX size={16} /> Bỏ lọc
           </button>
           <button
-            onClick={fetchOrders}
+            onClick={() => refetch()}
             className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase shadow-xl hover:bg-black transition"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />{" "}
@@ -499,7 +490,7 @@ export const OrderListManager = () => {
         <AdminOrderDetailModal
           order={viewingOrder}
           onClose={() => setViewingOrder(null)}
-          onRefresh={fetchOrders}
+          onRefresh={() => refetch()}
         />
       )}
     </div>

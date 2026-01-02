@@ -1206,53 +1206,85 @@ export const OrderDetailPage = () => {
                 </div>
 
                 {/* SECTION 2.5: Exchange Configuration (only if exchange selected) */}
-                {returnForm.type === "exchange" && (
-                  <div className="space-y-4 p-6 bg-blue-50 rounded-3xl border-2 border-blue-100 animate-in slide-in-from-top-4">
-                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <ArrowRightLeft size={14} /> Cấu hình sản phẩm muốn đổi
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black text-blue-500 uppercase ml-1">
-                          Size mới
+                {returnForm.type === "exchange" &&
+                  returningItem &&
+                  (() => {
+                    // Find product from returningItem
+                    const currentProduct = products.find(
+                      (p) => p.id === returningItem.productId
+                    );
+
+                    // Get unique sizes and colors from product variants
+                    const availableSizes = currentProduct
+                      ? Array.from(
+                          new Set(currentProduct.variants.map((v) => v.size))
+                        ).filter(Boolean)
+                      : [];
+                    const availableColors = currentProduct
+                      ? Array.from(
+                          new Set(currentProduct.variants.map((v) => v.color))
+                        ).filter(Boolean)
+                      : [];
+
+                    return (
+                      <div className="space-y-4 p-6 bg-blue-50 rounded-3xl border-2 border-blue-100 animate-in slide-in-from-top-4">
+                        <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                          <ArrowRightLeft size={14} /> Cấu hình sản phẩm muốn
+                          đổi
                         </label>
-                        <input
-                          type="text"
-                          placeholder="Ví dụ: L, XL, 42"
-                          className="w-full bg-white border-none rounded-xl px-4 py-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-300"
-                          value={returnForm.exchangeToSize}
-                          onChange={(e) =>
-                            setReturnForm({
-                              ...returnForm,
-                              exchangeToSize: e.target.value,
-                            })
-                          }
-                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-[8px] font-black text-blue-500 uppercase ml-1">
+                              Size mới
+                            </label>
+                            <select
+                              className="w-full bg-white border-none rounded-xl px-4 py-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-300"
+                              value={returnForm.exchangeToSize}
+                              onChange={(e) =>
+                                setReturnForm({
+                                  ...returnForm,
+                                  exchangeToSize: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">-- Giữ nguyên size --</option>
+                              {availableSizes.map((size) => (
+                                <option key={size} value={size}>
+                                  {size}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[8px] font-black text-blue-500 uppercase ml-1">
+                              Màu mới
+                            </label>
+                            <select
+                              className="w-full bg-white border-none rounded-xl px-4 py-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-300"
+                              value={returnForm.exchangeToColor}
+                              onChange={(e) =>
+                                setReturnForm({
+                                  ...returnForm,
+                                  exchangeToColor: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">-- Giữ nguyên màu --</option>
+                              {availableColors.map((color) => (
+                                <option key={color} value={color}>
+                                  {color}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <p className="text-[9px] font-bold text-blue-600/70 leading-relaxed">
+                          💡 Chỉ chọn những thuộc tính muốn đổi. Ví dụ: chỉ đổi
+                          size thì chỉ chọn Size mới.
+                        </p>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black text-blue-500 uppercase ml-1">
-                          Màu mới
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Ví dụ: Đen, Trắng"
-                          className="w-full bg-white border-none rounded-xl px-4 py-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-300"
-                          value={returnForm.exchangeToColor}
-                          onChange={(e) =>
-                            setReturnForm({
-                              ...returnForm,
-                              exchangeToColor: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[9px] font-bold text-blue-600/70 leading-relaxed">
-                      💡 Để trống nếu không muốn đổi thuộc tính đó. Ví dụ: chỉ
-                      đổi size thì chỉ điền Size mới.
-                    </p>
-                  </div>
-                )}
+                    );
+                  })()}
               </div>
 
               <div className="p-10 bg-gray-50/50 space-y-8">

@@ -39,6 +39,7 @@ const authService = {
       return {
         ...user,
         role: user.role, // ADMIN/SALES/WAREHOUSE/CUSTOMER
+        addresses: user.addresses ? JSON.parse(user.addresses as any) : [],
       };
     }
 
@@ -47,6 +48,7 @@ const authService = {
       email,
       fullName: "Hội viên SportHub",
       role: "CUSTOMER",
+      phone: "",
       addresses: [],
     };
   },
@@ -92,6 +94,19 @@ const authService = {
     }
 
     return { valid: false, message: "Mã OTP không chính xác" };
+  },
+};
+
+// User service
+const userService = {
+  updateAddresses: async (userId: string, addresses: any[]) => {
+    const { error } = await supabase
+      .from("User")
+      .update({ addresses: JSON.stringify(addresses) })
+      .eq("id", userId);
+
+    if (error) throw new Error(error.message);
+    return true;
   },
 };
 
@@ -471,6 +486,15 @@ const inventoryService = {
     if (error) throw new Error(error.message);
     return data || [];
   },
+  // Alias for getStockIssues
+  getIssueEntries: async (): Promise<StockIssue[]> => {
+    const { data, error } = await supabase
+      .from("StockIssue")
+      .select("*")
+      .order("date", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
   saveStockIssue: async (issueData: any, user: User) => {
     const now = new Date().toISOString();
     const code = `PXK-${new Date().getFullYear()}-${Date.now()
@@ -529,6 +553,128 @@ const reportService = {
     if (error) throw new Error(error.message);
     return data || [];
   },
+
+  getRevenueData: async ({ range }: { range: string }) => {
+    // Mock data for revenue analytics
+    const now = new Date();
+    const chartData = [];
+    const days =
+      range === "today"
+        ? 1
+        : range === "7days"
+        ? 7
+        : range === "month"
+        ? 30
+        : 365;
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      chartData.push({
+        date: date.toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        revenue: Math.floor(Math.random() * 50000000) + 10000000,
+        orders: Math.floor(Math.random() * 50) + 10,
+      });
+    }
+
+    const totalRevenue = chartData.reduce((sum, item) => sum + item.revenue, 0);
+    const totalOrders = chartData.reduce((sum, item) => sum + item.orders, 0);
+    const profit = Math.floor(totalRevenue * 0.3); // 30% profit margin
+
+    return {
+      metrics: {
+        totalRevenue,
+        netRevenue: totalRevenue,
+        profit,
+        totalOrders,
+        orderTotal: totalOrders,
+        avgOrderValue: totalRevenue / totalOrders,
+        returnCount: Math.floor(Math.random() * 5) + 1, // 1-5%
+        growth: {
+          revenue: Math.floor(Math.random() * 30) + 5,
+          profit: Math.floor(Math.random() * 25) + 3,
+          orders: Math.floor(Math.random() * 20) + 3,
+        },
+        returnRate: Math.floor(Math.random() * 5) + 1,
+      },
+      chartData,
+      topProducts: [
+        {
+          name: "Áo Manchester United Home 24/25",
+          sold: 120,
+          revenue: 15000000,
+        },
+        { name: "Giày Nike Mercurial", sold: 89, revenue: 12000000 },
+        { name: "Áo Real Madrid Away", sold: 75, revenue: 9000000 },
+      ],
+      categoryBreakdown: [
+        { name: "Áo đấu", value: 45, color: "#3b82f6" },
+        { name: "Giày", value: 30, color: "#10b981" },
+        { name: "Phụ kiện", value: 25, color: "#f59e0b" },
+      ],
+      paymentData: [
+        {
+          method: "Chuyển khoản",
+          count: 120,
+          amount: 180000000,
+          color: "#3b82f6",
+        },
+        { method: "Tiền mặt", count: 45, amount: 67500000, color: "#10b981" },
+        { method: "Ví điện tử", count: 30, amount: 45000000, color: "#f59e0b" },
+      ],
+    };
+  },
+
+  getInventoryData: async (filters: any) => {
+    try {
+      const { data: variants, error } = await supabase
+        .from("ProductVariant")
+        .select("*, product:Product(*)")
+        .eq("status", "active");
+
+      if (error) throw error;
+
+      const list = (variants || []).map((v: any) => ({
+        productName: v.product?.name || "Unknown",
+        sku: v.sku,
+        size: v.size,
+        color: v.color,
+        stockQuantity: v.stockQuantity || 0,
+        costPrice: v.product?.costPrice || 0,
+        inventoryValue: (v.stockQuantity || 0) * (v.product?.costPrice || 0),
+        thumbnail: v.imageUrl || v.product?.thumbnailUrl,
+        isLowStock: (v.stockQuantity || 0) < 10,
+      }));
+
+      const totalValue = list.reduce(
+        (sum: number, item: any) => sum + item.inventoryValue,
+        0
+      );
+      const lowStockCount = list.filter((item: any) => item.isLowStock).length;
+      const totalItems = list.reduce(
+        (sum: number, item: any) => sum + item.stockQuantity,
+        0
+      );
+
+      return {
+        metrics: {
+          totalValue,
+          lowStockCount,
+          totalItems,
+        },
+        list,
+      };
+    } catch (error) {
+      console.error("Error fetching inventory data:", error);
+      return {
+        metrics: { totalValue: 0, lowStockCount: 0, totalItems: 0 },
+        list: [],
+      };
+    }
+  },
 };
 
 const employeeService = {
@@ -574,6 +720,7 @@ export const api = {
   orders: orderService,
   returnRequests: returnRequestService,
   auth: authService,
+  users: userService,
   categories: categoryService,
   brands: brandService,
   attributes: attributeService,
@@ -592,6 +739,7 @@ export {
   orderService,
   returnRequestService,
   authService,
+  userService,
   categoryService,
   brandService,
   attributeService,

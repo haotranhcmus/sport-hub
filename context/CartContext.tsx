@@ -1,12 +1,29 @@
-
-import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
-import { CartItem, Product, ProductVariant, ProductStatus } from '../types';
-import { useAuth } from './AuthContext';
-import { api } from '../services';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+  useEffect,
+} from "react";
+import { CartItem, Product, ProductVariant, ProductStatus } from "../types";
+import { useAuth } from "./AuthContext";
+import { useProducts } from "../hooks/useProductsQuery";
+import {
+  useCart as useCartQuery,
+  useAddToCart,
+  useUpdateCartQuantity,
+  useRemoveFromCart,
+  useClearCart,
+} from "../hooks/useCartQuery";
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, variant: ProductVariant, quantity: number) => void;
+  addToCart: (
+    product: Product,
+    variant: ProductVariant,
+    quantity: number
+  ) => void;
   removeFromCart: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
@@ -15,108 +32,101 @@ interface CartContextType {
   isOpen: boolean;
   toggleCart: () => void;
   closeCart: () => void;
-  isValid: boolean; 
+  isValid: boolean;
   syncLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'sporthub_guest_cart';
+const LOCAL_STORAGE_KEY = "sporthub_guest_cart";
 const CART_EXPIRY_DAYS = 7;
 
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const CartProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const { user, isAuthenticated } = useAuth();
-  const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Use TanStack Query for products (auto-cached, auto-refetched)
+  const { data: latestProducts = [], isLoading: productsLoading } =
+    useProducts();
+
+  // Use TanStack Query for authenticated user's cart
+  const { data: serverCartItems = [] } = useCartQuery(user?.id);
+
+  // Use TanStack Query mutations with optimistic updates
+  const addToCartMutation = useAddToCart(user?.id);
+  const updateQuantityMutation = useUpdateCartQuantity(user?.id);
+  const removeFromCartMutation = useRemoveFromCart(user?.id);
+  const clearCartMutation = useClearCart(user?.id);
+
+  // Local state for guest cart
+  const [guestItems, setGuestItems] = useState<CartItem[]>([]);
   const [syncLoading, setSyncLoading] = useState(false);
-  const [latestProducts, setLatestProducts] = useState<Product[]>([]);
 
-  // Tải dữ liệu sản phẩm mới nhất từ API để validate
-  const refreshProducts = async () => {
-    const prods = await api.products.list();
-    setLatestProducts(prods);
-  };
-
+  // Load guest cart from localStorage
   useEffect(() => {
-    const loadCart = async () => {
-      setSyncLoading(true);
-      await refreshProducts();
-      if (isAuthenticated && user) {
-        const dbItems = await api.cart.get(user.id);
-        const guestData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (guestData) {
-          const { items: guestItems, timestamp } = JSON.parse(guestData);
-          const isExpired = Date.now() - timestamp > CART_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-          if (!isExpired && guestItems.length > 0) {
-            const merged = [...dbItems];
-            guestItems.forEach((gItem: CartItem) => {
-              const existingIndex = merged.findIndex(m => m.variantId === gItem.variantId);
-              if (existingIndex > -1) {
-                merged[existingIndex].quantity += gItem.quantity;
-              } else {
-                merged.push(gItem);
-              }
-            });
-            setItems(merged);
-            await api.cart.save(user.id, merged);
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-          } else {
-            setItems(dbItems);
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-          }
+    if (!isAuthenticated) {
+      const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (data) {
+        const { items: savedItems, timestamp } = JSON.parse(data);
+        const isExpired =
+          Date.now() - timestamp > CART_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+        if (isExpired) {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          setGuestItems([]);
         } else {
-          setItems(dbItems);
-        }
-      } else {
-        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (data) {
-          const { items: savedItems, timestamp } = JSON.parse(data);
-          const isExpired = Date.now() - timestamp > CART_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-          if (isExpired) {
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            setItems([]);
-          } else {
-            setItems(savedItems);
-          }
+          setGuestItems(savedItems);
         }
       }
-      setSyncLoading(false);
-    };
-
-    loadCart();
-  }, [isAuthenticated, user?.id]);
-
-  useEffect(() => {
-    if (syncLoading) return;
-    if (isAuthenticated && user) {
-      api.cart.save(user.id, items);
-    } else {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
-        items,
-        timestamp: Date.now()
-      }));
     }
-  }, [items, isAuthenticated, user, syncLoading]);
+  }, [isAuthenticated]);
+
+  // Save guest cart to localStorage
+  useEffect(() => {
+    if (!isAuthenticated && guestItems.length >= 0) {
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({
+          items: guestItems,
+          timestamp: Date.now(),
+        })
+      );
+    }
+  }, [guestItems, isAuthenticated]);
+
+  // Get items based on auth status (server-side via query or local guest cart)
+  const items = useMemo(() => {
+    // For authenticated users, use server cart from TanStack Query
+    // For guests, use local state
+    return isAuthenticated ? serverCartItems : guestItems;
+  }, [isAuthenticated, serverCartItems, guestItems]);
 
   const validatedItems = useMemo(() => {
-    return items.map(item => {
+    return items.map((item) => {
       // Validate dựa trên latestProducts fetch từ API thay vì mockData tĩnh
-      const realProduct = latestProducts.find(p => p.id === item.product.id);
-      const realVariant = realProduct?.variants?.find(v => v.id === item.variantId);
+      const realProduct = latestProducts.find((p) => p.id === item.product.id);
+      const realVariant = realProduct?.variants?.find(
+        (v) => v.id === item.variantId
+      );
 
-      let warning = '';
-      let error = '';
+      let warning = "";
+      let error = "";
       let finalQuantity = item.quantity;
       let isAvailable = true;
 
-      if (!realProduct || realProduct.status === ProductStatus.ARCHIVED || realProduct.status === ProductStatus.DRAFT) {
-        error = 'Sản phẩm không còn kinh doanh.';
+      if (
+        !realProduct ||
+        realProduct.status === ProductStatus.ARCHIVED ||
+        realProduct.status === ProductStatus.DRAFT
+      ) {
+        error = "Sản phẩm không còn kinh doanh.";
         isAvailable = false;
       } else if (realProduct.status === ProductStatus.INACTIVE) {
-        warning = 'Sản phẩm tạm thời hết hàng.';
+        warning = "Sản phẩm tạm thời hết hàng.";
         isAvailable = false;
       } else if (!realVariant || realVariant.stockQuantity <= 0) {
-        error = 'Phân loại này đã hết hàng.';
+        error = "Phân loại này đã hết hàng.";
         isAvailable = false;
       } else if (item.quantity > realVariant.stockQuantity) {
         warning = `Chỉ còn ${realVariant.stockQuantity} sản phẩm.`;
@@ -129,69 +139,135 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         warning,
         error,
         isAvailable,
-        product: realProduct || item.product, 
-        variant: realVariant || item.variant
+        product: realProduct || item.product,
+        variant: realVariant || item.variant,
       };
     });
   }, [items, latestProducts]);
 
+  // Auto-update guest cart items when validation changes quantity
   useEffect(() => {
-    const needsUpdate = validatedItems.some((v, i) => v.quantity !== items[i]?.quantity);
-    if (needsUpdate) {
-        setItems(validatedItems.map(({warning, error, isAvailable, ...rest}) => rest as CartItem));
-    }
-  }, [validatedItems]);
-
-  const isValid = useMemo(() => {
-    return validatedItems.length > 0 && validatedItems.every(i => i.isAvailable && !i.error);
-  }, [validatedItems]);
-
-  const addToCart = async (product: Product, variant: ProductVariant, quantity: number) => {
-    await refreshProducts(); // Cập nhật stock mới nhất trước khi thêm
-    
-    setItems(prev => {
-      const existing = prev.find(i => i.variantId === variant.id);
-      if (existing) {
-        const newQty = existing.quantity + quantity;
-        return prev.map(i => 
-          i.variantId === variant.id ? { ...i, quantity: newQty } : i
+    if (!isAuthenticated) {
+      const needsUpdate = validatedItems.some(
+        (v, i) => v.quantity !== items[i]?.quantity
+      );
+      if (needsUpdate) {
+        setGuestItems(
+          validatedItems.map(
+            ({ warning, error, isAvailable, ...rest }) => rest as CartItem
+          )
         );
       }
-      return [...prev, { id: Date.now().toString(), variantId: variant.id, product, variant, quantity }];
-    });
+    }
+  }, [validatedItems, isAuthenticated]);
+
+  const isValid = useMemo(() => {
+    return (
+      validatedItems.length > 0 &&
+      validatedItems.every((i) => i.isAvailable && !i.error)
+    );
+  }, [validatedItems]);
+
+  const addToCart = (
+    product: Product,
+    variant: ProductVariant,
+    quantity: number
+  ) => {
+    if (isAuthenticated && user) {
+      // Use TanStack Query mutation with optimistic update (instant UI)
+      addToCartMutation.mutate({ product, variant, quantity });
+    } else {
+      // Guest: update local state
+      setGuestItems((prev) => {
+        const existing = prev.find((i) => i.variantId === variant.id);
+        if (existing) {
+          return prev.map((i) =>
+            i.variantId === variant.id
+              ? { ...i, quantity: i.quantity + quantity }
+              : i
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            variantId: variant.id,
+            product,
+            variant,
+            quantity,
+          },
+        ];
+      });
+    }
     setIsOpen(true);
   };
 
   const removeFromCart = (variantId: string) => {
-    setItems(prev => prev.filter(i => i.variantId !== variantId));
+    if (isAuthenticated && user) {
+      removeFromCartMutation.mutate(variantId);
+    } else {
+      setGuestItems((prev) => prev.filter((i) => i.variantId !== variantId));
+    }
   };
 
   const updateQuantity = (variantId: string, quantity: number) => {
     if (quantity <= 0) {
-        removeFromCart(variantId);
-        return;
+      removeFromCart(variantId);
+      return;
     }
-    setItems(prev => prev.map(i => i.variantId === variantId ? { ...i, quantity } : i));
+
+    if (isAuthenticated && user) {
+      updateQuantityMutation.mutate({ variantId, quantity });
+    } else {
+      setGuestItems((prev) =>
+        prev.map((i) => (i.variantId === variantId ? { ...i, quantity } : i))
+      );
+    }
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    if (isAuthenticated && user) {
+      clearCartMutation.mutate();
+    } else {
+      setGuestItems([]);
+    }
+  };
 
-  const totalItems = useMemo(() => items.reduce((acc, item) => acc + item.quantity, 0), [items]);
-  
-  const totalPrice = useMemo(() => validatedItems.reduce((acc, item) => {
-    if (!item.isAvailable) return acc;
-    const price = item.product.promotionalPrice || item.product.basePrice;
-    return acc + ((price + item.variant.priceAdjustment) * item.quantity);
-  }, 0), [validatedItems]);
+  const totalItems = useMemo(
+    () => items.reduce((acc, item) => acc + item.quantity, 0),
+    [items]
+  );
 
-  const toggleCart = () => setIsOpen(prev => !prev);
+  const totalPrice = useMemo(
+    () =>
+      validatedItems.reduce((acc, item) => {
+        if (!item.isAvailable) return acc;
+        const price = item.product.promotionalPrice || item.product.basePrice;
+        return acc + (price + item.variant.priceAdjustment) * item.quantity;
+      }, 0),
+    [validatedItems]
+  );
+
+  const toggleCart = () => setIsOpen((prev) => !prev);
   const closeCart = () => setIsOpen(false);
 
   return (
-    <CartContext.Provider value={{ 
-      items: validatedItems as any, addToCart, removeFromCart, updateQuantity, clearCart, 
-      totalItems, totalPrice, isOpen, toggleCart, closeCart, isValid, syncLoading
-    }}>
+    <CartContext.Provider
+      value={{
+        items: validatedItems as any,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        totalItems,
+        totalPrice,
+        isOpen,
+        toggleCart,
+        closeCart,
+        isValid,
+        syncLoading,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

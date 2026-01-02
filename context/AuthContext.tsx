@@ -8,9 +8,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
-  addAddress: (address: Omit<UserAddress, "id">) => void;
-  removeAddress: (id: string) => void;
-  setDefaultAddress: (id: string) => void;
+  addAddress: (address: Omit<UserAddress, "id">) => Promise<void>;
+  removeAddress: (id: string) => Promise<void>;
+  setDefaultAddress: (id: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => void;
 }
 
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
   };
 
-  const addAddress = (newAddr: Omit<UserAddress, "id">) => {
+  const addAddress = async (newAddr: Omit<UserAddress, "id">) => {
     if (!user) return;
     const addressWithId = { ...newAddr, id: `addr-${Date.now()}` };
     const updatedAddresses = [...user.addresses, addressWithId];
@@ -75,19 +75,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const updated = { ...user, addresses: updatedAddresses };
     setUser(updated);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+
+    // Sync with database
+    try {
+      const { api } = await import("../services");
+      await api.users.updateAddresses(user.id, updatedAddresses);
+    } catch (err) {
+      console.error("Failed to sync addresses to database:", err);
+    }
   };
 
-  const removeAddress = (id: string) => {
+  const removeAddress = async (id: string) => {
     if (!user) return;
+    const updatedAddresses = user.addresses.filter((a) => a.id !== id);
     const updated = {
       ...user,
-      addresses: user.addresses.filter((a) => a.id !== id),
+      addresses: updatedAddresses,
     };
     setUser(updated);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+
+    // Sync with database
+    try {
+      const { api } = await import("../services");
+      await api.users.updateAddresses(user.id, updatedAddresses);
+    } catch (err) {
+      console.error("Failed to sync addresses to database:", err);
+    }
   };
 
-  const setDefaultAddress = (id: string) => {
+  const setDefaultAddress = async (id: string) => {
     if (!user) return;
     const updatedAddresses = user.addresses.map((a) => ({
       ...a,
@@ -96,6 +113,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const updated = { ...user, addresses: updatedAddresses };
     setUser(updated);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+
+    // Sync with database
+    try {
+      const { api } = await import("../services");
+      await api.users.updateAddresses(user.id, updatedAddresses);
+    } catch (err) {
+      console.error("Failed to sync addresses to database:", err);
+    }
   };
 
   return (
