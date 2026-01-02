@@ -34,17 +34,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     try {
+      console.log("🔐 [AUTH] Login attempt for:", email);
       const userData = await api.auth.login(email);
+      console.log("✅ [AUTH] Login successful:", userData);
+      
       // Use addresses from database (or empty array if none)
       const userWithAddresses: User = {
         ...userData,
-        addresses: userData.addresses || [],
+        addresses: Array.isArray(userData.addresses) ? userData.addresses : [],
       };
+      
       setUser(userWithAddresses);
+      
       // Persist to localStorage
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithAddresses));
+      console.log("💾 [AUTH] User saved to localStorage");
     } catch (error) {
-      console.error("Login failed", error);
+      console.error("❌ [AUTH] Login failed:", error);
       throw error;
     }
   };

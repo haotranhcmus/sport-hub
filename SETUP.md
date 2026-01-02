@@ -1,7 +1,9 @@
 # 📝 HƯỚNG DẪN CÀI ĐẶT DỰ ÁN - SportHub
 
 ## ✅ TÓM TẮT NHANH
+
 **Có, chỉ cần 3 bước:**
+
 1. Tạo file `.env` và paste nội dung
 2. Chạy `npm install`
 3. Chạy `npm run dev`
@@ -51,6 +53,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **LƯU Ý QUAN TRỌNG:**
+
 - File `.env` đã được thêm vào `.gitignore` nên sẽ **KHÔNG** được push lên GitHub
 - Bạn cần cung cấp nội dung file `.env` riêng cho người clone dự án
 - `VITE_SUPABASE_KEY` là **anon key** (public key) - an toàn để dùng trên frontend
@@ -63,6 +66,7 @@ npm install
 ```
 
 Lệnh này sẽ cài đặt tất cả packages trong `package.json`:
+
 - React 19.2.3
 - TypeScript 5.8.2
 - Vite 6.2.0
@@ -88,11 +92,13 @@ Dự án sẽ chạy tại: **http://localhost:3000**
 Sau khi dự án chạy, bạn có thể đăng nhập với:
 
 ### Admin Account
+
 - **Email:** `admin@sporthub.vn`
 - **Password:** Bất kỳ (không check password trong dev mode)
 - **Redirect:** Tự động chuyển đến `/admin`
 
 ### Customer Account
+
 - **Email:** `customer@test.com`
 - **Password:** Bất kỳ
 - **Redirect:** Ở lại trang homepage
@@ -102,6 +108,7 @@ Sau khi dự án chạy, bạn có thể đăng nhập với:
 ## 📦 CÁC LỆNH HỮU ÍCH
 
 ### Development
+
 ```bash
 npm run dev              # Chạy dev server
 npm run build            # Build production
@@ -109,6 +116,7 @@ npm run preview          # Preview production build
 ```
 
 ### Prisma (Optional - chỉ khi cần làm việc với database schema)
+
 ```bash
 npm run prisma:generate  # Generate Prisma Client
 npm run prisma:migrate   # Chạy migrations
@@ -156,28 +164,36 @@ npm run prisma:seed      # Seed database với dữ liệu mẫu
 ## ⚠️ TROUBLESHOOTING
 
 ### Lỗi: "Cannot find module '@supabase/supabase-js'"
+
 **Giải pháp:** Chạy lại `npm install`
 
 ### Lỗi: "VITE_SUPABASE_URL is not defined"
+
 **Giải pháp:** Kiểm tra file `.env` đã tạo đúng chưa và có prefix `VITE_`
 
 ### Lỗi: Port 3000 đã được sử dụng
-**Giải pháp:** 
+
+**Giải pháp:**
+
 - Tắt ứng dụng đang chạy ở port 3000
 - Hoặc đổi port trong `vite.config.ts`:
+
 ```ts
 export default defineConfig({
   server: {
     port: 3001, // Đổi sang port khác
   },
-})
+});
 ```
 
 ### Lỗi: "Prisma Client not generated"
+
 **Giải pháp:** Chạy `npm run prisma:generate`
 
 ### Database connection failed
-**Giải pháp:** 
+
+**Giải pháp:**
+
 - Kiểm tra `DATABASE_URL` và `DIRECT_URL` trong `.env`
 - Đảm bảo Supabase project đang chạy
 - Kiểm tra credentials (username, password)
@@ -201,6 +217,7 @@ export default defineConfig({
 ## 📞 HỖ TRỢ
 
 Nếu gặp vấn đề:
+
 1. Kiểm tra lại các bước trong `TROUBLESHOOTING`
 2. Xem log lỗi trong terminal
 3. Kiểm tra browser console (F12)

@@ -19,14 +19,20 @@ export const LoginPage = () => {
     setLoading(true);
     
     try {
+        console.log("📧 [LOGIN PAGE] Attempting login with:", email);
+        
         // Giả lập delay và check logic cơ bản
         if (!email || !password) {
             throw new Error("Vui lòng nhập đầy đủ email và mật khẩu");
         }
+        
         await login(email, password);
+        console.log("✅ [LOGIN PAGE] Login successful, navigating to home");
         navigate('/');
     } catch (e: any) {
-        setError(e.message || "Đăng nhập thất bại. Vui lòng thử lại.");
+        console.error("❌ [LOGIN PAGE] Login error:", e);
+        const errorMessage = e?.message || e?.toString() || "Đăng nhập thất bại. Vui lòng thử lại.";
+        setError(errorMessage);
     } finally {
         setLoading(false);
     }

@@ -29,28 +29,53 @@ const MEMBER_CARTS: Record<string, CartItem[]> = {};
 // Auth service (simple, inline)
 const authService = {
   login: async (email: string): Promise<User> => {
-    const { data: user } = await supabase
-      .from("User")
-      .select("*")
-      .eq("email", email)
-      .single();
+    try {
+      const { data: user, error } = await supabase
+        .from("User")
+        .select("*")
+        .eq("email", email)
+        .single();
 
-    if (user) {
+      if (error) {
+        console.error("❌ [LOGIN] Supabase error:", error);
+      }
+
+      if (user) {
+        console.log("✅ [LOGIN] User found:", user.email, "Role:", user.role);
+        
+        // Safely parse addresses
+        let addresses = [];
+        if (user.addresses) {
+          try {
+            addresses = typeof user.addresses === 'string' 
+              ? JSON.parse(user.addresses) 
+              : user.addresses;
+          } catch (e) {
+            console.error("❌ [LOGIN] Failed to parse addresses:", e);
+            addresses = [];
+          }
+        }
+
+        return {
+          ...user,
+          role: user.role, // ADMIN/SALES/WAREHOUSE/CUSTOMER
+          addresses,
+        };
+      }
+
+      console.log("⚠️ [LOGIN] User not found, creating guest user");
       return {
-        ...user,
-        role: user.role, // ADMIN/SALES/WAREHOUSE/CUSTOMER
-        addresses: user.addresses ? JSON.parse(user.addresses as any) : [],
+        id: "usr-01",
+        email,
+        fullName: "Hội viên SportHub",
+        role: "CUSTOMER",
+        phone: "",
+        addresses: [],
       };
+    } catch (error) {
+      console.error("❌ [LOGIN] Unexpected error:", error);
+      throw error;
     }
-
-    return {
-      id: "usr-01",
-      email,
-      fullName: "Hội viên SportHub",
-      role: "CUSTOMER",
-      phone: "",
-      addresses: [],
-    };
   },
   sendOTP: async (contact: string) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();

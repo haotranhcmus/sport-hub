@@ -64,8 +64,10 @@ export const CheckoutPage = () => {
   const [showAddressBookModal, setShowAddressBookModal] = useState(false);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [saveToAddressBook, setSaveToAddressBook] = useState(isAuthenticated);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null
+  );
+
   // New Address Form
   const [newAddress, setNewAddress] = useState({
     name: "",
@@ -184,7 +186,7 @@ export const CheckoutPage = () => {
     setNewAddress({ name: "", phone: "", address: "" });
     setShowNewAddressForm(false);
     setShowAddressBookModal(false);
-    
+
     alert("✅ Đã thêm địa chỉ mới!");
   };
 
@@ -420,7 +422,10 @@ export const CheckoutPage = () => {
                       </p>
                     </div>
                   </div>
-                  <ChevronRight size={20} className="text-blue-500 group-hover:translate-x-1 transition" />
+                  <ChevronRight
+                    size={20}
+                    className="text-blue-500 group-hover:translate-x-1 transition"
+                  />
                 </button>
               </div>
             )}
@@ -789,7 +794,7 @@ export const CheckoutPage = () => {
           </div>
         </div>
       )}
-      
+
       {/* Address Book Modal */}
       {showAddressBookModal && isAuthenticated && user && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -850,7 +855,10 @@ export const CheckoutPage = () => {
                             </p>
                           </div>
                           {selectedAddressId === addr.id && (
-                            <CheckCircle size={24} className="text-blue-500 flex-shrink-0" />
+                            <CheckCircle
+                              size={24}
+                              className="text-blue-500 flex-shrink-0"
+                            />
                           )}
                         </div>
                       </button>
@@ -880,12 +888,14 @@ export const CheckoutPage = () => {
                       <input
                         type="text"
                         value={newAddress.name}
-                        onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewAddress({ ...newAddress, name: e.target.value })
+                        }
                         className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 transition font-black text-sm"
                         placeholder="VD: Nguyễn Văn A"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
                         Số điện thoại *
@@ -893,19 +903,29 @@ export const CheckoutPage = () => {
                       <input
                         type="tel"
                         value={newAddress.phone}
-                        onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
+                        onChange={(e) =>
+                          setNewAddress({
+                            ...newAddress,
+                            phone: e.target.value,
+                          })
+                        }
                         className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 transition font-black text-sm"
                         placeholder="VD: 0901234567"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
                         Địa chỉ chi tiết *
                       </label>
                       <textarea
                         value={newAddress.address}
-                        onChange={(e) => setNewAddress({ ...newAddress, address: e.target.value })}
+                        onChange={(e) =>
+                          setNewAddress({
+                            ...newAddress,
+                            address: e.target.value,
+                          })
+                        }
                         className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 transition font-medium text-sm h-24"
                         placeholder="VD: 123 Nguyễn Văn Linh, Quận 7, TP.HCM"
                       />
