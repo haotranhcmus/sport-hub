@@ -189,22 +189,109 @@ export const orderService = {
     return true;
   },
 
-  cancelOrder: async (orderId: string, reason: string): Promise<boolean> => {
+  cancelOrder: async (
+    orderId: string,
+    reason: string,
+    userId?: string
+  ): Promise<boolean> => {
     const order = await orderService.getDetail(orderId);
-    if (!order) return false;
+    if (!order) throw new Error("Đơn hàng không tồn tại");
 
-    const notes = (order.customerNotes || "") + "\\nLý do hủy: " + reason;
+    console.log("🔄 [CANCEL ORDER] Checking order:", {
+      orderId: order.id,
+      orderCode: order.orderCode,
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+    });
 
-    const { error } = await supabase
-      .from("Order")
-      .update({
-        status: OrderStatus.CANCELLED,
-        customerNotes: notes,
-      })
-      .eq("id", order.id);
+    // ✅ VALIDATION: Check trạng thái được phép hủy
+    const CANCELLABLE_STATUSES = [
+      OrderStatus.PENDING_PAYMENT,
+      OrderStatus.PENDING_CONFIRMATION,
+    ];
 
-    if (error) throw new Error(error.message);
-    return true;
+    if (!CANCELLABLE_STATUSES.includes(order.status as any)) {
+      throw new Error(
+        `Không thể hủy đơn hàng ở trạng thái "${order.status}". ` +
+          `Vui lòng liên hệ CSKH để được hỗ trợ.`
+      );
+    }
+
+    // ✅ VALIDATION: Check thời gian (30 phút kể từ tạo đơn)
+    const orderAge = Date.now() - new Date(order.createdAt).getTime();
+    const MAX_CANCEL_TIME = 30 * 60 * 1000; // 30 minutes
+
+    if (
+      order.status === OrderStatus.PENDING_CONFIRMATION &&
+      orderAge > MAX_CANCEL_TIME
+    ) {
+      throw new Error(
+        "Đơn hàng đã quá thời gian cho phép hủy (30 phút). Vui lòng liên hệ CSKH."
+      );
+    }
+
+    try {
+      // ✅ STEP 1: Hoàn kho (nếu đã trừ - chỉ COD mới trừ ngay)
+      if (
+        order.paymentMethod === "COD" &&
+        order.status === OrderStatus.PENDING_CONFIRMATION
+      ) {
+        console.log("📦 [CANCEL ORDER] Hoàn kho cho đơn COD");
+        // Hoàn từng item
+        for (const item of order.items) {
+          const { error: stockError } = await supabase.rpc(
+            "increment_variant_stock",
+            {
+              variant_id: item.productId, // TODO: Cần lưu variantId
+              quantity: item.quantity,
+            }
+          );
+          if (stockError) {
+            console.error(
+              "⚠️ [CANCEL ORDER] Stock rollback error:",
+              stockError
+            );
+            // Không throw, chỉ log để admin xử lý manual
+          }
+        }
+      }
+
+      // ✅ STEP 2: Update order status
+      const notes = `${order.customerNotes || ""}\nLý do hủy: ${reason}`;
+      const { error } = await supabase
+        .from("Order")
+        .update({
+          status: OrderStatus.CANCELLED,
+          customerNotes: notes,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      if (error) throw new Error(error.message);
+
+      // ✅ STEP 3: Log hệ thống
+      try {
+        await supabase.from("SystemLog").insert({
+          id: crypto.randomUUID(),
+          action: "CANCEL_ORDER",
+          tableName: "Order",
+          recordId: order.id,
+          description: `Hủy đơn hàng ${order.orderCode}. Lý do: ${reason}`,
+          actorId: userId || "customer",
+          actorName: order.customerName,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (logError) {
+        console.error("⚠️ [CANCEL ORDER] Log error:", logError);
+        // Không throw, log không quan trọng bằng cancel
+      }
+
+      console.log("✅ [CANCEL ORDER] Success:", order.orderCode);
+      return true;
+    } catch (error) {
+      console.error("❌ [CANCEL ORDER] Error:", error);
+      throw error;
+    }
   },
 
   requestRefundAndCancel: async (
@@ -262,17 +349,87 @@ export const orderService = {
     return true;
   },
 
-  cancelReturnRequest: async (orderId: string): Promise<boolean> => {
-    const { error } = await supabase
-      .from("Order")
-      .update({
-        status: OrderStatus.COMPLETED,
-        returnInfo: null,
-      })
-      .eq("id", orderId);
+  cancelReturnRequest: async (
+    requestId: string,
+    reason?: string
+  ): Promise<boolean> => {
+    console.log("🔄 [CANCEL RETURN] Checking request:", requestId);
 
-    if (error) throw new Error(error.message);
-    return true;
+    // Step 1: Get return request
+    const { data: request, error: fetchError } = await supabase
+      .from("ReturnRequest")
+      .select("*, order:Order(*)")
+      .eq("id", requestId)
+      .single();
+
+    if (fetchError || !request) {
+      console.error("❌ [CANCEL RETURN] Request not found:", fetchError);
+      throw new Error("Yêu cầu đổi/trả không tồn tại");
+    }
+
+    console.log("📋 [CANCEL RETURN] Request status:", request.status);
+
+    // ✅ VALIDATION: Chỉ cho hủy khi PENDING
+    if (request.status !== "PENDING") {
+      throw new Error(
+        `Không thể hủy yêu cầu đã được ${request.status}. ` +
+          `Vui lòng liên hệ CSKH để được hỗ trợ.`
+      );
+    }
+
+    try {
+      // Step 2: Update ReturnRequest status
+      const { error: updateError } = await supabase
+        .from("ReturnRequest")
+        .update({
+          status: "CANCELLED",
+          adminNotes: reason
+            ? `Khách hàng hủy: ${reason}`
+            : "Khách hàng hủy yêu cầu",
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", requestId);
+
+      if (updateError) {
+        console.error("❌ [CANCEL RETURN] Update error:", updateError);
+        throw new Error(updateError.message);
+      }
+
+      // Step 3: Update OrderItem.returnStatus về NONE
+      const { error: itemError } = await supabase
+        .from("OrderItem")
+        .update({ returnStatus: "NONE" })
+        .eq("id", request.orderItemId);
+
+      if (itemError) {
+        console.error("❌ [CANCEL RETURN] Item update error:", itemError);
+        // Không throw, vì đã cancel request thành công
+      }
+
+      // Step 4: Log hệ thống
+      try {
+        await supabase.from("SystemLog").insert({
+          id: crypto.randomUUID(),
+          action: "CANCEL_RETURN_REQUEST",
+          tableName: "ReturnRequest",
+          recordId: requestId,
+          description: `Hủy yêu cầu ${request.requestCode}${
+            reason ? `. Lý do: ${reason}` : ""
+          }`,
+          actorId: "customer",
+          actorName: request.order?.customerName || "Unknown",
+          createdAt: new Date().toISOString(),
+        });
+      } catch (logError) {
+        console.error("⚠️ [CANCEL RETURN] Log error:", logError);
+      }
+
+      console.log("✅ [CANCEL RETURN] Success:", request.requestCode);
+      return true;
+    } catch (error) {
+      console.error("❌ [CANCEL RETURN] Error:", error);
+      throw error;
+    }
   },
 
   updateShippingInfo: async (

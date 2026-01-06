@@ -1019,9 +1019,29 @@ const VariantManager = ({
                   </td>
                   <td className="px-10 py-5 text-right">
                     <button
-                      onClick={() =>
-                        setVariants(variants.filter((_, idx) => idx !== i))
-                      }
+                      onClick={async () => {
+                        // Check if variant is existing (has UUID)
+                        const isExisting = v.id && v.id.length > 10;
+                        
+                        if (isExisting) {
+                          // Confirm delete for existing variants
+                          if (!confirm(`Xóa variant "${v.sku}"?\n\nLưu ý: Nếu variant đã có trong đơn hàng, hệ thống sẽ từ chối xóa.`)) {
+                            return;
+                          }
+                          
+                          try {
+                            await api.products.deleteVariant(v.id, currentUser);
+                            alert("Đã xóa variant thành công!");
+                            // Remove from state
+                            setVariants(variants.filter((_, idx) => idx !== i));
+                          } catch (err: any) {
+                            alert(err.message || "Lỗi khi xóa variant.");
+                          }
+                        } else {
+                          // New variant - just remove from state
+                          setVariants(variants.filter((_, idx) => idx !== i));
+                        }
+                      }}
                       className="p-2 text-gray-200 hover:text-red-500 transition"
                     >
                       <Trash2 size={16} />

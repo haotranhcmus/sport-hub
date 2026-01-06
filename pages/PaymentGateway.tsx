@@ -10,6 +10,11 @@ import {
   CreditCard,
   RefreshCw,
   Lock,
+  Copy,
+  Smartphone,
+  Mail,
+  Info,
+  Truck,
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { api } from "../services";
@@ -31,6 +36,9 @@ export const PaymentGateway = () => {
     expiry: "",
     cvv: "",
   });
+
+  // Success Modal State
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     if (!order) {
@@ -74,15 +82,11 @@ export const PaymentGateway = () => {
           order.orderCode
         );
 
-        alert(
-          "Thanh toán thành công! Đang chuyển hướng tới chi tiết đơn hàng..."
-        );
-
         // Xóa giỏ hàng
         clearCart();
 
-        // ĐIỀU HƯỚNG
-        navigate(`/orders/${order.orderCode}`);
+        // Hiển thị modal thành công
+        setShowSuccessModal(true);
       } else {
         alert("Lỗi: Không đủ hàng trong kho. Vui lòng liên hệ hỗ trợ.");
       }
@@ -298,6 +302,106 @@ export const PaymentGateway = () => {
           </button>
         </div>
       </div>
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 backdrop-blur-md bg-black/60">
+          <div className="bg-white rounded-[40px] w-full max-w-lg p-10 shadow-2xl animate-in zoom-in-95 text-center">
+            <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={64} />
+            </div>
+
+            <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight mb-2">
+              THANH TOÁN THÀNH CÔNG!
+            </h2>
+            <p className="text-gray-500 font-medium text-sm mb-8 leading-relaxed">
+              Đơn hàng của bạn đã được thanh toán và đang được xử lý.
+            </p>
+
+            <div className="bg-gray-50 rounded-[32px] p-8 border border-gray-100 mb-8 relative group">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">
+                Mã đơn hàng của bạn
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-3xl font-black text-secondary tracking-tight">
+                  {order.orderCode}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(order.orderCode);
+                    alert("Đã sao chép mã đơn hàng!");
+                  }}
+                  className="p-2 text-gray-300 hover:text-secondary transition"
+                  title="Sao chép"
+                >
+                  <Copy size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-left mb-10">
+              <div className="flex gap-4 items-start">
+                <div className="p-3 bg-blue-50 text-secondary rounded-2xl shrink-0">
+                  <Smartphone size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-gray-800 uppercase">
+                    Tra cứu đơn hàng
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed">
+                    Dùng mã đơn hàng trên tại trang{" "}
+                    <b className="text-gray-700">"Tra cứu đơn hàng"</b>
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="p-3 bg-blue-50 text-secondary rounded-2xl shrink-0">
+                  <Truck size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-gray-800 uppercase">
+                    Thời gian giao hàng
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed">
+                    Dự kiến{" "}
+                    <b className="text-gray-700">2-5 ngày làm việc</b> tùy khu
+                    vực
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="p-3 bg-blue-50 text-secondary rounded-2xl shrink-0">
+                  <Info size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-gray-800 uppercase">
+                    Chính sách đổi trả
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed">
+                    Miễn phí đổi trả trong{" "}
+                    <b className="text-gray-700">7 ngày</b> nếu sản phẩm lỗi
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => navigate("/")}
+                className="py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition"
+              >
+                Về trang chủ
+              </button>
+              <button
+                onClick={() => navigate(`/orders/${order.orderCode}`)}
+                className="py-4 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-xl shadow-blue-500/20"
+              >
+                Xem chi tiết
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

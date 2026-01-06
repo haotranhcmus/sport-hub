@@ -287,14 +287,24 @@ export const ProductConfigManager = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+
+    // Validation
+    if (activeTab === "attribute") {
+      if (formData.type === "variant" && formData.values.length === 0) {
+        alert("Thuộc tính sinh biến thể phải có ít nhất 1 giá trị!");
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       if (activeTab === "category") {
-        // Fixed: Removed redundant selectedAttrIds as it's already in formData
+        // Clean data: Remove UI-only fields
+        const { selectedAttrIds, ...cleanData } = formData;
         if (editingItem)
-          await api.categories.update(editingItem.id, formData, currentUser);
-        // Fixed: Removed redundant selectedAttrIds as it's already in formData
-        else await api.categories.create(formData, currentUser);
+          await api.categories.update(editingItem.id, cleanData, currentUser);
+        else await api.categories.create(cleanData, currentUser);
       } else if (activeTab === "brand") {
         const brandData = {
           ...formData,
@@ -304,9 +314,11 @@ export const ProductConfigManager = () => {
           await api.brands.update(editingItem.id, brandData, currentUser);
         else await api.brands.create(brandData, currentUser);
       } else {
+        // Clean attribute data: Remove UI-only fields
+        const { selectedAttrIds, ...cleanAttrData } = formData;
         if (editingItem)
-          await api.attributes.update(editingItem.id, formData, currentUser);
-        else await api.attributes.create(formData as any, currentUser);
+          await api.attributes.update(editingItem.id, cleanAttrData, currentUser);
+        else await api.attributes.create(cleanAttrData as any, currentUser);
       }
       setIsModalOpen(false);
       await fetchData();
@@ -837,6 +849,114 @@ export const ProductConfigManager = () => {
                       </div>
                     ) : null}
                   </div>
+
+                  {/* ATTRIBUTE TYPE SELECTOR */}
+                  {activeTab === "attribute" && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Loại thuộc tính *
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, type: "variant" })}
+                          className={`p-4 rounded-2xl border-2 transition text-left ${
+                            formData.type === "variant"
+                              ? "border-purple-500 bg-purple-50"
+                              : "border-gray-200 bg-white hover:border-purple-300"
+                          }`}
+                        >
+                          <p className={`text-xs font-black uppercase ${
+                            formData.type === "variant" ? "text-purple-600" : "text-gray-600"
+                          }`}>
+                            Sinh biến thể
+                          </p>
+                          <p className="text-[9px] text-gray-400 font-bold mt-1">
+                            Tạo SKU (Size, Màu sắc)
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, type: "info" })}
+                          className={`p-4 rounded-2xl border-2 transition text-left ${
+                            formData.type === "info"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white hover:border-blue-300"
+                          }`}
+                        >
+                          <p className={`text-xs font-black uppercase ${
+                            formData.type === "info" ? "text-blue-600" : "text-gray-600"
+                          }`}>
+                            Thông tin bổ sung
+                          </p>
+                          <p className="text-[9px] text-gray-400 font-bold mt-1">
+                            Chi tiết sản phẩm
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ATTRIBUTE VALUES LIST */}
+                  {activeTab === "attribute" && (
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Danh sách giá trị {formData.type === "variant" && "*"}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Ví dụ: Đỏ, 40, XL..."
+                          className="flex-1 border border-gray-100 bg-gray-50 rounded-2xl px-5 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-secondary/10"
+                          value={newValueInput}
+                          onChange={(e) => setNewValueInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddPredefinedValue();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddPredefinedValue}
+                          className="px-6 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase hover:bg-blue-700 transition"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 min-h-[60px]">
+                        {formData.values.length > 0 ? (
+                          formData.values.map((val, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-sm border border-gray-100 animate-in zoom-in-50"
+                            >
+                              {val}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData({
+                                    ...formData,
+                                    values: formData.values.filter((_, i) => i !== idx),
+                                  })
+                                }
+                                className="text-gray-400 hover:text-red-500 transition"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[10px] text-gray-300 font-bold uppercase py-2">
+                            {formData.type === "variant" 
+                              ? "Chưa có giá trị. Thêm ít nhất 1 giá trị để sinh biến thể."
+                              : "Không có giá trị định sẵn. Người dùng có thể nhập tự do."}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {activeTab === "category" && (
                     <div className="space-y-2">

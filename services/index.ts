@@ -42,14 +42,15 @@ const authService = {
 
       if (user) {
         console.log("✅ [LOGIN] User found:", user.email, "Role:", user.role);
-        
+
         // Safely parse addresses
         let addresses = [];
         if (user.addresses) {
           try {
-            addresses = typeof user.addresses === 'string' 
-              ? JSON.parse(user.addresses) 
-              : user.addresses;
+            addresses =
+              typeof user.addresses === "string"
+                ? JSON.parse(user.addresses)
+                : user.addresses;
           } catch (e) {
             console.error("❌ [LOGIN] Failed to parse addresses:", e);
             addresses = [];
@@ -503,6 +504,10 @@ const inventoryService = {
     if (error) throw new Error(error.message);
     return data;
   },
+  // ✅ Alias for consistency
+  createStockEntry: async (entryData: any, user: User) => {
+    return inventoryService.saveStockEntry(entryData, user);
+  },
   getStockIssues: async (): Promise<StockIssue[]> => {
     const { data, error } = await supabase
       .from("StockIssue")
@@ -538,6 +543,10 @@ const inventoryService = {
       .single();
     if (error) throw new Error(error.message);
     return data;
+  },
+  // ✅ Alias for consistency
+  createStockIssue: async (issueData: any, user: User) => {
+    return inventoryService.saveStockIssue(issueData, user);
   },
   getStocktakes: async (): Promise<Stocktake[]> => {
     const { data, error } = await supabase

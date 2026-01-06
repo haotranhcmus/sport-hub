@@ -182,33 +182,112 @@ export const productService = {
   },
 
   saveVariants: async (productId: string, variants: any[], user: User) => {
-    // Delete existing variants
-    await supabase.from("ProductVariant").delete().eq("productId", productId);
+    // ✅ FIX: Use UPSERT logic instead of DELETE ALL + INSERT
+    // This preserves existing variants and their stock data
+    
+    const now = new Date().toISOString();
 
-    // Insert new variants
-    if (variants.length > 0) {
-      const now = new Date().toISOString();
-      const { error } = await supabase.from("ProductVariant").insert(
-        variants.map((v) => ({
-          ...v,
-          productId,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-        }))
-      );
-      if (error) throw new Error(error.message);
+    for (const variant of variants) {
+      // Check if variant exists (has valid UUID id)
+      const isExisting = variant.id && variant.id.length > 10; // UUID check
+
+      if (isExisting) {
+        // UPDATE existing variant
+        const { error } = await supabase
+          .from("ProductVariant")
+          .update({
+            sku: variant.sku,
+            size: variant.size,
+            color: variant.color,
+            stockQuantity: variant.stockQuantity,
+            priceAdjustment: variant.priceAdjustment,
+            imageUrl: variant.imageUrl,
+            status: variant.status,
+            updatedAt: now,
+          })
+          .eq("id", variant.id);
+
+        if (error) {
+          console.error("❌ [VARIANT UPDATE] Error:", error);
+          throw new Error(`Lỗi cập nhật variant ${variant.sku}: ${error.message}`);
+        }
+      } else {
+        // INSERT new variant
+        const { error } = await supabase
+          .from("ProductVariant")
+          .insert({
+            id: crypto.randomUUID(),
+            productId: productId,
+            sku: variant.sku,
+            size: variant.size,
+            color: variant.color,
+            stockQuantity: variant.stockQuantity || 0,
+            priceAdjustment: variant.priceAdjustment || 0,
+            imageUrl: variant.imageUrl || "",
+            status: variant.status || "active",
+            createdAt: now,
+            updatedAt: now,
+          });
+
+        if (error) {
+          console.error("❌ [VARIANT INSERT] Error:", error);
+          throw new Error(`Lỗi tạo variant ${variant.sku}: ${error.message}`);
+        }
+      }
     }
 
     await supabase.from("SystemLog").insert(
       createSystemLog({
         action: "UPDATE",
         tableName: "ProductVariant",
-        description: `Cập nhật biến thể sản phẩm ${productId}`,
+        description: `Cập nhật ${variants.length} biến thể sản phẩm ${productId}`,
         actorId: user.id,
         actorName: user.fullName,
       })
     );
+
+    console.log(`✅ [SAVE VARIANTS] Saved ${variants.length} variants for product ${productId}`);
+  },
+
+  deleteVariant: async (variantId: string, user: User) => {
+    console.log("🗑️ [DELETE VARIANT] Starting:", variantId);
+
+    // Check if variant is referenced in any orders
+    const { data: orderItems } = await supabase
+      .from("OrderItem")
+      .select("id")
+      .eq("variantId", variantId)
+      .limit(1);
+
+    if (orderItems && orderItems.length > 0) {
+      throw new Error(
+        "Không thể xóa variant đã có trong đơn hàng. Vui lòng đổi trạng thái thành 'archived' thay vì xóa."
+      );
+    }
+
+    // Safe to delete
+    const { error } = await supabase
+      .from("ProductVariant")
+      .delete()
+      .eq("id", variantId);
+
+    if (error) {
+      console.error("❌ [DELETE VARIANT] Error:", error);
+      throw new Error(error.message);
+    }
+
+    await supabase.from("SystemLog").insert(
+      createSystemLog({
+        action: "DELETE",
+        tableName: "ProductVariant",
+        recordId: variantId,
+        description: `Xóa variant ${variantId}`,
+        actorId: user.id,
+        actorName: user.fullName,
+      })
+    );
+
+    console.log("✅ [DELETE VARIANT] Success");
   },
 
   getSizeGuide: async (productId: string) => {

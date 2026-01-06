@@ -301,13 +301,25 @@ export const OrderDetailPage = () => {
 
   const handleCancelReturn = async () => {
     if (!order) return;
+
+    // ✅ FIX: Get return request ID from order.returnRequests array
+    const pendingRequest = order.returnRequests?.find(
+      (req: any) => req.status === "PENDING"
+    );
+
+    if (!pendingRequest) {
+      alert("Không tìm thấy yêu cầu đang chờ xử lý.");
+      return;
+    }
+
     setLoading(true);
     setShowCancelConfirm(false);
     try {
-      await api.orders.cancelReturnRequest(order.id);
+      // ✅ FIX: Pass returnRequest.id instead of order.id
+      await api.orders.cancelReturnRequest(pendingRequest.id);
       await fetchOrder();
-    } catch (err) {
-      alert("Lỗi khi hủy yêu cầu.");
+    } catch (err: any) {
+      alert(err?.message || "Lỗi khi hủy yêu cầu.");
     } finally {
       setLoading(false);
     }
