@@ -112,9 +112,11 @@ export const ProductDetailPage = () => {
         setError("Sản phẩm này hiện không còn kinh doanh.");
       } else {
         setError("");
-        setActiveImage(
-          product.thumbnailUrl || "https://via.placeholder.com/600"
-        );
+        const validUrl =
+          product.thumbnailUrl && product.thumbnailUrl.trim() !== ""
+            ? product.thumbnailUrl
+            : "https://via.placeholder.com/600?text=No+Image";
+        setActiveImage(validUrl);
       }
     }
   }, [product]);
@@ -141,10 +143,15 @@ export const ProductDetailPage = () => {
         }
       } catch (err) {
         console.error("Error fetching metadata:", err);
+        // Set default values on error
+        setAttributes([]);
+        setSizeGuide(null);
       }
     };
 
-    fetchMetadata();
+    fetchMetadata().catch((err) => {
+      console.error("Unhandled error in fetchMetadata:", err);
+    });
   }, [product?.id]);
 
   const selectedVariant = useMemo(() => {
@@ -194,11 +201,21 @@ export const ProductDetailPage = () => {
 
   const productImages = useMemo(() => {
     if (!product) return [];
-    return [
-      product.thumbnailUrl,
-      `${product.thumbnailUrl}&v=2`,
-      `${product.thumbnailUrl}&v=3`,
-    ];
+    const baseUrl =
+      product.thumbnailUrl && product.thumbnailUrl.trim() !== ""
+        ? product.thumbnailUrl
+        : "https://via.placeholder.com/600?text=No+Image";
+
+    // Only create variants if it's a valid HTTP URL, not base64
+    if (baseUrl.startsWith("http")) {
+      return [
+        baseUrl,
+        `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}v=2`,
+        `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}v=3`,
+      ];
+    }
+    // If it's base64 or other format, just return single image
+    return [baseUrl];
   }, [product]);
 
   if (loading)
@@ -259,6 +276,13 @@ export const ProductDetailPage = () => {
                 src={activeImage}
                 alt={product.name}
                 className="w-full h-full object-contain p-8 group-hover:scale-110 transition duration-700"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes("placeholder")) {
+                    target.src =
+                      "https://via.placeholder.com/600?text=No+Image";
+                  }
+                }}
               />
               {discountPercent > 0 && (
                 <div className="absolute top-6 left-6 bg-red-600 text-white text-sm font-black px-4 py-1.5 rounded-full shadow-xl">
@@ -286,6 +310,13 @@ export const ProductDetailPage = () => {
                     src={imgUrl}
                     className="w-full h-full object-cover"
                     alt={`view-${i}`}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes("placeholder")) {
+                        target.src =
+                          "https://via.placeholder.com/150?text=No+Image";
+                      }
+                    }}
                   />
                 </div>
               ))}

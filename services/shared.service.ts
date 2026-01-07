@@ -4,6 +4,15 @@ import { supabase } from "../lib/supabase";
 export const delay = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Helper to ensure updatedAt is included in UPDATE operations
+ * Supabase REST API doesn't auto-handle Prisma @updatedAt decorator
+ */
+export const withUpdatedAt = (data: any) => ({
+  ...data,
+  updatedAt: new Date().toISOString(),
+});
+
 // Helper function to add timestamps to SystemLog
 export const createSystemLog = (logData: any) => {
   const now = new Date().toISOString();

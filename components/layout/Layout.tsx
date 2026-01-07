@@ -45,20 +45,29 @@ export const Layout = () => {
         setSuggestions([]);
         return;
       }
-      const allProducts = await api.products.list();
-      const normalizedQuery = removeAccents(searchQuery);
-      const filtered = allProducts
-        .filter((p) => {
-          const normalizedName = removeAccents(p.name);
-          return (
-            normalizedName.includes(normalizedQuery) ||
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        })
-        .slice(0, 5);
-      setSuggestions(filtered);
+      try {
+        const allProducts = await api.products.list();
+        const normalizedQuery = removeAccents(searchQuery);
+        const filtered = allProducts
+          .filter((p) => {
+            const normalizedName = removeAccents(p.name);
+            return (
+              normalizedName.includes(normalizedQuery) ||
+              p.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+          })
+          .slice(0, 5);
+        setSuggestions(filtered);
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        setSuggestions([]);
+      }
     };
-    const timeoutId = setTimeout(getSuggestions, 300);
+    const timeoutId = setTimeout(() => {
+      getSuggestions().catch((err) => {
+        console.error("Unhandled error in getSuggestions:", err);
+      });
+    }, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
@@ -144,9 +153,19 @@ export const Layout = () => {
                     className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 transition text-left group"
                   >
                     <img
-                      src={product.thumbnailUrl}
+                      src={
+                        product.thumbnailUrl ||
+                        "https://via.placeholder.com/40?text=No+Image"
+                      }
                       className="w-10 h-10 rounded-lg object-cover"
                       alt=""
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.includes("placeholder")) {
+                          target.src =
+                            "https://via.placeholder.com/40?text=No+Image";
+                        }
+                      }}
                     />
                     <div className="flex-1">
                       <p className="text-xs font-black text-gray-800 line-clamp-1">

@@ -162,9 +162,19 @@ export const ProductManager = () => {
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden p-1 flex items-center justify-center shrink-0">
                       <img
-                        src={p.thumbnailUrl}
+                        src={
+                          p.thumbnailUrl ||
+                          "https://via.placeholder.com/56?text=No+Image"
+                        }
                         className="max-w-full max-h-full object-contain"
                         alt=""
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.includes("placeholder")) {
+                            target.src =
+                              "https://via.placeholder.com/56?text=No+Image";
+                          }
+                        }}
                       />
                     </div>
                     <div>
@@ -403,6 +413,13 @@ const ProductForm = ({
                         src={formData.thumbnailUrl}
                         className="w-full h-full object-contain p-4"
                         alt=""
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.includes("placeholder")) {
+                            target.src =
+                              "https://via.placeholder.com/400?text=No+Image";
+                          }
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
                         <button
@@ -819,17 +836,56 @@ const VariantManager = ({
         ? cartesian(...valuesToCombine)
         : valuesToCombine[0].map((v) => [v]);
 
-    const newVariants: ProductVariant[] = combinations.map(
+    // Check for duplicate variants before creating
+    const existingVariants = new Set(
+      variants.map((v) => `${v.color.toLowerCase()}-${v.size.toLowerCase()}`)
+    );
+
+    const duplicates: string[] = [];
+    const validCombinations = combinations.filter((combo: any) => {
+      const color = Array.isArray(combo) ? combo[0] : combo;
+      const size = Array.isArray(combo) ? combo[1] || "Free" : "Free";
+      const key = `${color.toLowerCase()}-${size.toLowerCase()}`;
+
+      if (existingVariants.has(key)) {
+        duplicates.push(`${color} - ${size}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (duplicates.length > 0) {
+      alert(
+        `Các biến thể sau đã tồn tại:\n${duplicates.join(
+          "\n"
+        )}\n\nChỉ tạo các biến thể chưa tồn tại.`
+      );
+      if (validCombinations.length === 0) {
+        return;
+      }
+    }
+
+    const newVariants: ProductVariant[] = validCombinations.map(
       (combo: any, index: number) => {
         const color = Array.isArray(combo) ? combo[0] : combo;
         const size = Array.isArray(combo) ? combo[1] || "Free" : "Free";
 
+        // Generate unique SKU with index to prevent duplicates
+        const colorCode = color
+          .replace(/\s+/g, "")
+          .slice(0, 5)
+          .toUpperCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, ""); // Remove Vietnamese accents
+        const sizeCode = size.toUpperCase().replace(/\s+/g, "");
+        const uniqueSuffix = (variants.length + index)
+          .toString()
+          .padStart(3, "0");
+
         return {
           id: `v-${Date.now()}-${index}`,
           productId: product.id,
-          sku: `${product.productCode}-${color.slice(0, 3).toUpperCase()}-${size
-            .toUpperCase()
-            .replace(/\s+/g, "")}`,
+          sku: `${product.productCode}-${colorCode}-${sizeCode}-${uniqueSuffix}`,
           color: color,
           size: size,
           stockQuantity: 0,
@@ -840,7 +896,7 @@ const VariantManager = ({
       }
     );
 
-    setVariants(newVariants);
+    setVariants([...variants, ...newVariants]);
     setShowGenerateModal(false);
   };
 
@@ -859,14 +915,28 @@ const VariantManager = ({
 
   const handleSaveEverything = async () => {
     if (!currentUser) return;
+
+    // Validate SKU uniqueness
+    const skus = variants.map((v) => v.sku);
+    const duplicates = skus.filter((sku, idx) => skus.indexOf(sku) !== idx);
+    if (duplicates.length > 0) {
+      alert(
+        `SKU bị trùng lặp:\n${[...new Set(duplicates)].join(
+          "\n"
+        )}\n\nVui lòng chỉnh sửa SKU để đảm bảo tính duy nhất.`
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await api.products.update(product.id, parentFormData, currentUser);
       await api.products.saveVariants(product.id, variants, currentUser);
-      alert("Đã lưu toàn bộ sản phẩm và danh sách biến thể!");
+      alert("✅ Đã lưu toàn bộ sản phẩm và danh sách biến thể!");
       onSuccess();
     } catch (err: any) {
-      alert(err.message || "Lỗi lưu dữ liệu.");
+      console.error("❌ [SAVE ERROR]", err);
+      alert(`❌ Lỗi lưu dữ liệu:\n${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -912,29 +982,22 @@ const VariantManager = ({
               {variants.map((v, i) => (
                 <tr key={v.id} className="hover:bg-gray-50/50 transition">
                   <td className="px-10 py-5">
-                    <div className="flex flex-col gap-1">
-                      <input
-                        className="text-[10px] font-black text-gray-800 uppercase bg-transparent border-none outline-none focus:ring-1 focus:ring-secondary/20 rounded px-1 w-full"
-                        value={v.color}
-                        onChange={(e) => {
-                          const newV = [...variants];
-                          newV[i].color = e.target.value;
-                          setVariants(newV);
-                        }}
-                      />
-                      <div className="flex items-center gap-1">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[8px] font-bold text-gray-400 uppercase">
+                          Màu:
+                        </span>
+                        <div className="text-[10px] font-black text-gray-800 uppercase bg-gray-50 border border-gray-200 rounded px-2 py-1 w-full cursor-not-allowed">
+                          {v.color}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
                         <span className="text-[8px] font-bold text-gray-400 uppercase">
                           Size:
                         </span>
-                        <input
-                          className="text-[9px] font-bold text-gray-500 uppercase bg-transparent border-none outline-none focus:ring-1 focus:ring-secondary/20 rounded px-1 w-12"
-                          value={v.size}
-                          onChange={(e) => {
-                            const newV = [...variants];
-                            newV[i].size = e.target.value;
-                            setVariants(newV);
-                          }}
-                        />
+                        <div className="text-[9px] font-bold text-gray-500 uppercase bg-gray-50 border border-gray-200 rounded px-2 py-1 w-20 cursor-not-allowed">
+                          {v.size}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -945,9 +1008,20 @@ const VariantManager = ({
                         className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-100 overflow-hidden flex items-center justify-center shrink-0 hover:border-secondary transition shadow-sm"
                       >
                         <img
-                          src={v.imageUrl || product.thumbnailUrl}
+                          src={
+                            v.imageUrl ||
+                            product.thumbnailUrl ||
+                            "https://via.placeholder.com/56?text=No+Image"
+                          }
                           className="w-full h-full object-contain"
                           alt=""
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("placeholder")) {
+                              target.src =
+                                "https://via.placeholder.com/56?text=No+Image";
+                            }
+                          }}
                         />
                       </button>
                       <input
@@ -1022,13 +1096,17 @@ const VariantManager = ({
                       onClick={async () => {
                         // Check if variant is existing (has UUID)
                         const isExisting = v.id && v.id.length > 10;
-                        
+
                         if (isExisting) {
                           // Confirm delete for existing variants
-                          if (!confirm(`Xóa variant "${v.sku}"?\n\nLưu ý: Nếu variant đã có trong đơn hàng, hệ thống sẽ từ chối xóa.`)) {
+                          if (
+                            !confirm(
+                              `Xóa variant "${v.sku}"?\n\nLưu ý: Nếu variant đã có trong đơn hàng, hệ thống sẽ từ chối xóa.`
+                            )
+                          ) {
                             return;
                           }
-                          
+
                           try {
                             await api.products.deleteVariant(v.id, currentUser);
                             alert("Đã xóa variant thành công!");

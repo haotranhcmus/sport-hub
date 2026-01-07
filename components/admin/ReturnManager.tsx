@@ -449,9 +449,19 @@ export const ReturnManager = () => {
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-3">
                         <img
-                          src={req.orderItem.thumbnailUrl}
+                          src={
+                            req.orderItem.thumbnailUrl ||
+                            "https://via.placeholder.com/48?text=No+Image"
+                          }
                           className="w-12 h-12 rounded-lg object-cover border border-gray-100"
                           alt=""
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("placeholder")) {
+                              target.src =
+                                "https://via.placeholder.com/48?text=No+Image";
+                            }
+                          }}
                         />
                         <div>
                           <p className="text-xs font-black text-gray-800 uppercase line-clamp-1">
@@ -607,9 +617,19 @@ export const ReturnManager = () => {
                     <div className="bg-white border border-gray-100 rounded-[32px] p-8">
                       <div className="flex gap-6">
                         <img
-                          src={viewingRequest.orderItem.thumbnailUrl}
+                          src={
+                            viewingRequest.orderItem.thumbnailUrl ||
+                            "https://via.placeholder.com/128?text=No+Image"
+                          }
                           className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-100 shadow-md"
                           alt=""
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("placeholder")) {
+                              target.src =
+                                "https://via.placeholder.com/128?text=No+Image";
+                            }
+                          }}
                         />
                         <div className="flex-1 space-y-4">
                           <div>

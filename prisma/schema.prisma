@@ -57,14 +57,15 @@ model Brand {
 }
 
 model ProductAttribute {
-  id         String     @id @default(uuid())
-  name       String
-  code       String     @unique
-  type       String
-  values     Json
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  categories Category[] @relation("CategoryToProductAttribute")
+  id          String     @id @default(uuid())
+  name        String
+  code        String     @unique
+  type        String
+  values      Json
+  categoryIds Json?      @default("[]")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  categories  Category[] @relation("CategoryToProductAttribute")
 
   @@index([code])
   @@index([type])

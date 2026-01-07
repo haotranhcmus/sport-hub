@@ -363,9 +363,8 @@ export const PaymentGateway = () => {
                     Thời gian giao hàng
                   </p>
                   <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed">
-                    Dự kiến{" "}
-                    <b className="text-gray-700">2-5 ngày làm việc</b> tùy khu
-                    vực
+                    Dự kiến <b className="text-gray-700">2-5 ngày làm việc</b>{" "}
+                    tùy khu vực
                   </p>
                 </div>
               </div>

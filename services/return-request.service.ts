@@ -7,7 +7,7 @@ import {
   OrderStatus,
 } from "../constants/enums";
 import { ReturnRequestData, User } from "../types";
-import { createSystemLog } from "./shared.service";
+import { createSystemLog, withUpdatedAt } from "./shared.service";
 
 export const returnRequestService = {
   // Customer creates a return/exchange request for ONE item
@@ -99,8 +99,8 @@ export const returnRequestService = {
       .select(
         `
           *,
-          order:Order(orderCode, customerName, customerPhone),
-          orderItem:OrderItem(productName, quantity, unitPrice, color, size)
+          order:Order(orderCode, customerName, customerPhone, customerAddress, totalAmount, createdAt),
+          orderItem:OrderItem(productId, productName, quantity, unitPrice, color, size, thumbnailUrl)
         `
       )
       .order("createdAt", { ascending: false });

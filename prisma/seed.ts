@@ -183,6 +183,7 @@ async function main() {
           "Hồng",
           "Xanh lá",
         ],
+        categoryIds: ["c1", "c2"], // Giày bóng đá, Áo thi đấu
       },
       {
         id: "attr-2",
@@ -206,6 +207,7 @@ async function main() {
           "10",
           "11",
         ],
+        categoryIds: ["c1", "c2", "c3"], // All categories
       },
       {
         id: "attr-3",
@@ -213,6 +215,7 @@ async function main() {
         code: "loai_dinh",
         type: "info",
         values: ["TF", "FG", "AG", "IC", "SG"],
+        categoryIds: ["c1"], // Giày bóng đá
       },
       {
         id: "attr-4",
@@ -228,6 +231,7 @@ async function main() {
           "Cotton",
           "Nylon",
         ],
+        categoryIds: ["c1", "c2", "c3"], // All categories
       },
       {
         id: "attr-5",
@@ -235,6 +239,7 @@ async function main() {
         code: "loai_co",
         type: "info",
         values: ["Cổ cao (Dynamic Fit)", "Cổ thấp"],
+        categoryIds: ["c1"], // Giày bóng đá
       },
       {
         id: "attr-6",
@@ -252,6 +257,7 @@ async function main() {
           "Grip3",
           "ACC",
         ],
+        categoryIds: ["c1", "c2", "c3"], // All categories
       },
     ],
   });
@@ -470,7 +476,7 @@ async function main() {
     data: {
       id: "refund-demo-001",
       orderCode: "ORD-REFUND-2025",
-      userId: "usr-01",
+      user: { connect: { id: "usr-01" } },
       customerName: "Nguyễn Hoàng Nam",
       customerPhone: "0912345678",
       customerAddress: "456 Lê Lợi, Quận 1, TP.HCM",
@@ -481,18 +487,6 @@ async function main() {
       paymentMethod: "ONLINE",
       paymentStatus: "PENDING_REFUND",
       createdAt: daysAgo(1),
-      returnInfo: {
-        requestId: "REF-9981",
-        reason:
-          "Khách hàng hủy đơn sau khi đã thanh toán online qua thẻ Visa. Cần hoàn lại tiền.",
-        status: "pending",
-        evidenceImages: [],
-        bankInfo: {
-          bankName: "Vietcombank (VCB)",
-          accountNumber: "1019988776655",
-          accountHolder: "NGUYEN HOANG NAM",
-        },
-      },
       items: {
         create: [
           {
@@ -515,7 +509,7 @@ async function main() {
     data: {
       id: "ret-001",
       orderCode: "ORD-RET-EXCHANGE",
-      userId: "usr-01",
+      user: { connect: { id: "usr-01" } },
       customerName: "Trần Anh Tuấn",
       customerPhone: "0988123456",
       customerAddress: "789 CMT8, Quận 10, TP.HCM",
@@ -526,37 +520,21 @@ async function main() {
       paymentMethod: "ONLINE",
       paymentStatus: "PAID",
       createdAt: daysAgo(2),
-      returnInfo: {
-        requestId: "REQ-8821",
-        type: "exchange",
-        reason: "Giày bị chật ngang, mình muốn đổi lên size 41 cùng mẫu.",
-        status: "pending",
-        evidenceImages: [
-          "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=200",
-          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=200",
-        ],
-        items: [
-          {
-            productId: "p1",
-            productName: "Nike Mercurial Vapor 15 Elite TF",
-            quantity: 1,
-          },
-        ],
-      },
-      items: {
-        create: [
-          {
-            productId: "p1",
-            productName: "Nike Mercurial Vapor 15 Elite TF",
-            quantity: 1,
-            unitPrice: 4950000,
-            color: "Đỏ",
-            size: "40",
-            thumbnailUrl:
-              "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600",
-          },
-        ],
-      },
+    },
+  });
+
+  await prisma.orderItem.create({
+    data: {
+      id: "oi-ret-001",
+      orderId: "ret-001",
+      productId: "p1",
+      productName: "Nike Mercurial Vapor 15 Elite TF",
+      quantity: 1,
+      unitPrice: 4950000,
+      color: "Đỏ",
+      size: "40",
+      thumbnailUrl:
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600",
     },
   });
 
@@ -575,42 +553,21 @@ async function main() {
       paymentMethod: "COD",
       paymentStatus: "PAID",
       createdAt: daysAgo(3),
-      returnInfo: {
-        requestId: "REQ-1029",
-        type: "refund",
-        reason:
-          "Áo bị lỗi đường chỉ ở cổ áo rất mất thẩm mỹ. Mình muốn trả hàng hoàn tiền.",
-        status: "pending",
-        evidenceImages: [
-          "https://images.unsplash.com/photo-1511886929837-354d827aae26?q=80&w=200",
-        ],
-        bankInfo: {
-          bankName: "Vietcombank (VCB)",
-          accountNumber: "1022998844",
-          accountHolder: "LE THI HOA",
-        },
-        items: [
-          {
-            productId: "p2",
-            productName: "Áo Man Utd 2024/25 Home Jersey",
-            quantity: 1,
-          },
-        ],
-      },
-      items: {
-        create: [
-          {
-            productId: "p2",
-            productName: "Áo Man Utd 2024/25 Home Jersey",
-            quantity: 1,
-            unitPrice: 950000,
-            color: "Đỏ",
-            size: "M",
-            thumbnailUrl:
-              "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=600",
-          },
-        ],
-      },
+    },
+  });
+
+  await prisma.orderItem.create({
+    data: {
+      id: "oi-ret-002",
+      orderId: "ret-002",
+      productId: "p2",
+      productName: "Áo Man Utd 2024/25 Home Jersey",
+      quantity: 1,
+      unitPrice: 950000,
+      color: "Đỏ",
+      size: "M",
+      thumbnailUrl:
+        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=600",
     },
   });
 
@@ -619,7 +576,7 @@ async function main() {
     data: {
       id: "ret-003",
       orderCode: "ORD-RET-PROCESSING",
-      userId: "usr-01",
+      user: { connect: { id: "usr-01" } },
       customerName: "Phạm Văn Nam",
       customerPhone: "0944001122",
       customerAddress: "456 Võ Văn Kiệt, Quận 1, TP.HCM",
@@ -630,43 +587,30 @@ async function main() {
       paymentMethod: "COD",
       paymentStatus: "PAID",
       createdAt: daysAgo(5),
-      returnInfo: {
-        requestId: "REQ-5542",
-        type: "exchange",
-        reason: "Nhầm màu, mình muốn đổi sang màu trắng.",
-        status: "approved",
-        evidenceImages: [],
-        items: [
-          {
-            productId: "p3",
-            productName: "Tất bóng đá chống trượt SportHub Pro",
-            quantity: 1,
-          },
-        ],
-      },
-      items: {
-        create: [
-          {
-            productId: "p3",
-            productName: "Tất bóng đá chống trượt SportHub Pro",
-            quantity: 1,
-            unitPrice: 150000,
-            color: "Đen",
-            size: "Free",
-            thumbnailUrl:
-              "https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?q=80&w=400",
-          },
-        ],
-      },
     },
   });
 
-  // Order 5: Completed order
+  await prisma.orderItem.create({
+    data: {
+      id: "oi-ret-003",
+      orderId: "ret-003",
+      productId: "p3",
+      productName: "Tất bóng đá chống trượt SportHub Pro",
+      quantity: 1,
+      unitPrice: 150000,
+      color: "Đen",
+      size: "Free",
+      thumbnailUrl:
+        "https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?q=80&w=400",
+    },
+  });
+
+  // Order 5: Guest order
   await prisma.order.create({
     data: {
       id: "order-1",
       orderCode: "ORD-88271",
-      userId: "usr-01",
+      user: { connect: { id: "usr-01" } },
       customerName: "Hội viên SportHub",
       customerPhone: "0901234567",
       customerAddress: "789 CMT8, Quận 10, TP.HCM",
@@ -697,7 +641,81 @@ async function main() {
   console.log(`✅ Created ${5} orders with items`);
 
   // ============================================================================
-  // 10. Seed System Config
+  // 10. Seed Return Requests
+  // ============================================================================
+  console.log("🔄 Seeding Return Requests...");
+
+  // Return Request 1: Exchange request (pending)
+  await prisma.returnRequest.create({
+    data: {
+      id: "rr-001",
+      requestCode: "RET-001234",
+      orderId: "ret-001",
+      orderItemId: "oi-ret-001",
+      type: "EXCHANGE",
+      status: "PENDING",
+      reason: "Giày bị chật ngang, mình muốn đổi lên size 41 cùng mẫu.",
+      evidenceImages: [
+        "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=200",
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=200",
+      ],
+      exchangeToSize: "41",
+      exchangeToColor: "Đỏ",
+      createdAt: daysAgo(2),
+      updatedAt: daysAgo(2),
+    },
+  });
+
+  // Return Request 2: Refund request (pending)
+  await prisma.returnRequest.create({
+    data: {
+      id: "rr-002",
+      requestCode: "RET-005678",
+      orderId: "ret-002",
+      orderItemId: "oi-ret-002",
+      type: "REFUND",
+      status: "PENDING",
+      reason:
+        "Áo bị lỗi đường chỉ ở cổ áo rất mất thẩm mỹ. Mình muốn trả hàng hoàn tiền.",
+      evidenceImages: [
+        "https://images.unsplash.com/photo-1511886929837-354d827aae26?q=80&w=200",
+      ],
+      refundAmount: 950000,
+      bankInfo: {
+        bankName: "Vietcombank (VCB)",
+        accountNumber: "1022998844",
+        accountHolder: "LE THI HOA",
+      },
+      createdAt: daysAgo(3),
+      updatedAt: daysAgo(3),
+    },
+  });
+
+  // Return Request 3: Exchange (approved)
+  await prisma.returnRequest.create({
+    data: {
+      id: "rr-003",
+      requestCode: "RET-009988",
+      orderId: "ret-003",
+      orderItemId: "oi-ret-003",
+      type: "EXCHANGE",
+      status: "APPROVED",
+      reason: "Nhầm màu, mình muốn đổi sang màu trắng.",
+      evidenceImages: [],
+      exchangeToSize: "Free",
+      exchangeToColor: "Trắng",
+      adminNotes: "Đã duyệt, chờ khách gửi hàng về.",
+      processedBy: "usr-admin",
+      processedAt: daysAgo(4),
+      createdAt: daysAgo(5),
+      updatedAt: daysAgo(4),
+    },
+  });
+
+  console.log("✅ Created 3 return requests");
+
+  // ============================================================================
+  // 11. Seed System Config
   // ============================================================================
   console.log("⚙️  Seeding System Config...");
 
@@ -730,6 +748,7 @@ async function main() {
   console.log("  ✅ 2 Users (1 admin, 1 customer)");
   console.log("  ✅ 1 Supplier");
   console.log("  ✅ 5 Orders (various statuses)");
+  console.log("  ✅ 3 Return Requests");
   console.log("  ✅ 1 System Config");
   console.log("\n✅ Database seed completed successfully!");
 }

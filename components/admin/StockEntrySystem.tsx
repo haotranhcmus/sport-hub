@@ -564,9 +564,19 @@ const StockEntryForm = ({ suppliers, products, onBack, onSaved }: any) => {
                     >
                       <div className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-100 overflow-hidden p-1 flex items-center justify-center shrink-0">
                         <img
-                          src={p.thumbnailUrl}
+                          src={
+                            p.thumbnailUrl ||
+                            "https://via.placeholder.com/64?text=No+Image"
+                          }
                           className="max-w-full max-h-full object-contain"
                           alt=""
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("placeholder")) {
+                              target.src =
+                                "https://via.placeholder.com/64?text=No+Image";
+                            }
+                          }}
                         />
                       </div>
                       <div className="flex-1">

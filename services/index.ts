@@ -6,7 +6,7 @@ import { productService } from "./product.service";
 import { orderService, setReturnRequestService } from "./order.service";
 import { returnRequestService } from "./return-request.service";
 import { supabase } from "../lib/supabase";
-import { createSystemLog } from "./shared.service";
+import { createSystemLog, withUpdatedAt } from "./shared.service";
 import {
   User,
   CartItem,
@@ -128,7 +128,7 @@ const userService = {
   updateAddresses: async (userId: string, addresses: any[]) => {
     const { error } = await supabase
       .from("User")
-      .update({ addresses: JSON.stringify(addresses) })
+      .update(withUpdatedAt({ addresses: JSON.stringify(addresses) }))
       .eq("id", userId);
 
     if (error) throw new Error(error.message);
@@ -182,7 +182,7 @@ const categoryService = {
   update: async (id: string, updates: any, user: User) => {
     const { data, error } = await supabase
       .from("Category")
-      .update(updates)
+      .update(withUpdatedAt(updates))
       .eq("id", id)
       .select()
       .single();
@@ -252,7 +252,7 @@ const brandService = {
   update: async (id: string, updates: any, user: User) => {
     const { data, error } = await supabase
       .from("Brand")
-      .update(updates)
+      .update(withUpdatedAt(updates))
       .eq("id", id)
       .select()
       .single();
@@ -322,7 +322,7 @@ const attributeService = {
   update: async (id: string, updates: any, user: User) => {
     const { data, error } = await supabase
       .from("ProductAttribute")
-      .update(updates)
+      .update(withUpdatedAt(updates))
       .eq("id", id)
       .select()
       .single();
@@ -404,7 +404,7 @@ const sizeGuideService = {
   update: async (id: string, updates: any, user: User) => {
     const { data, error } = await supabase
       .from("SizeGuide")
-      .update(updates)
+      .update(withUpdatedAt(updates))
       .eq("id", id)
       .select()
       .single();
@@ -496,12 +496,18 @@ const inventoryService = {
         ...entryData,
         id: crypto.randomUUID(),
         code,
+        date: entryData.date || now,
+        actorName: user.fullName,
         createdAt: now,
         updatedAt: now,
       })
       .select()
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("❌ [STOCK ENTRY] Error:", error);
+      throw new Error(error.message);
+    }
+    console.log("✅ [STOCK ENTRY] Created:", code);
     return data;
   },
   // ✅ Alias for consistency
@@ -536,12 +542,18 @@ const inventoryService = {
         ...issueData,
         id: crypto.randomUUID(),
         code,
+        date: issueData.date || now,
+        actorName: user.fullName,
         createdAt: now,
         updatedAt: now,
       })
       .select()
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("❌ [STOCK ISSUE] Error:", error);
+      throw new Error(error.message);
+    }
+    console.log("✅ [STOCK ISSUE] Created:", code);
     return data;
   },
   // ✅ Alias for consistency
@@ -567,12 +579,18 @@ const inventoryService = {
         ...stocktakeData,
         id: crypto.randomUUID(),
         code,
+        date: stocktakeData.date || now,
+        actorName: user.fullName,
         createdAt: now,
         updatedAt: now,
       })
       .select()
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("❌ [STOCKTAKE] Error:", error);
+      throw new Error(error.message);
+    }
+    console.log("✅ [STOCKTAKE] Created:", code);
     return data;
   },
 };

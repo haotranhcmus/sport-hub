@@ -900,9 +900,19 @@ export const OrderDetailPage = () => {
             <div className="p-10 space-y-8">
               <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-3xl border border-gray-100">
                 <img
-                  src={reviewingItem.thumbnailUrl}
+                  src={
+                    reviewingItem.thumbnailUrl ||
+                    "https://via.placeholder.com/56?text=No+Image"
+                  }
                   className="w-14 h-14 rounded-xl object-cover"
                   alt=""
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes("placeholder")) {
+                      target.src =
+                        "https://via.placeholder.com/56?text=No+Image";
+                    }
+                  }}
                 />
                 <p className="text-xs font-black uppercase text-gray-800 line-clamp-2">
                   {reviewingItem.productName}
@@ -1047,9 +1057,19 @@ export const OrderDetailPage = () => {
             <div className="p-10 space-y-8">
               <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-3xl border border-gray-100">
                 <img
-                  src={reviewingItem.thumbnailUrl}
+                  src={
+                    reviewingItem.thumbnailUrl ||
+                    "https://via.placeholder.com/56?text=No+Image"
+                  }
                   className="w-14 h-14 rounded-xl object-cover"
                   alt=""
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes("placeholder")) {
+                      target.src =
+                        "https://via.placeholder.com/56?text=No+Image";
+                    }
+                  }}
                 />
                 <p className="text-xs font-black uppercase text-gray-800 line-clamp-2">
                   {reviewingItem.productName}
@@ -1153,9 +1173,19 @@ export const OrderDetailPage = () => {
                     <div className="p-6 bg-gray-50 rounded-3xl border-2 border-gray-100">
                       <div className="flex items-center gap-4">
                         <img
-                          src={returningItem.thumbnailUrl}
+                          src={
+                            returningItem.thumbnailUrl ||
+                            "https://via.placeholder.com/80?text=No+Image"
+                          }
                           className="w-20 h-20 rounded-xl object-cover shadow-sm"
                           alt=""
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("placeholder")) {
+                              target.src =
+                                "https://via.placeholder.com/80?text=No+Image";
+                            }
+                          }}
                         />
                         <div className="flex-1">
                           <h4 className="text-sm font-black uppercase text-gray-800 line-clamp-2 mb-2">

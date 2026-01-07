@@ -250,6 +250,7 @@ export const ProductConfigManager = () => {
     description: "",
     imageUrl: "",
     logoUrl: "",
+    country: "",
     parentId: "",
     sizeGuideId: "",
     categoryIds: [] as string[],
@@ -300,24 +301,62 @@ export const ProductConfigManager = () => {
     setLoading(true);
     try {
       if (activeTab === "category") {
-        // Clean data: Remove UI-only fields
-        const { selectedAttrIds, ...cleanData } = formData;
+        // Clean data: Remove UI-only fields and attribute-specific fields
+        const {
+          selectedAttrIds,
+          categoryIds,
+          code,
+          type,
+          values,
+          ...cleanData
+        } = formData;
+        // Convert empty foreign keys to null
+        const categoryData = {
+          ...cleanData,
+          parentId: cleanData.parentId || null,
+          sizeGuideId: cleanData.sizeGuideId || null,
+        };
         if (editingItem)
-          await api.categories.update(editingItem.id, cleanData, currentUser);
-        else await api.categories.create(cleanData, currentUser);
+          await api.categories.update(editingItem.id, categoryData, currentUser);
+        else await api.categories.create(categoryData, currentUser);
       } else if (activeTab === "brand") {
+        // Clean brand data: Remove UI-only and attribute-specific fields, plus fields Brand doesn't have
+        const {
+          selectedAttrIds,
+          categoryIds,
+          imageUrl,
+          code,
+          type,
+          values,
+          description,
+          parentId,
+          sizeGuideId,
+          ...brandBase
+        } = formData;
         const brandData = {
-          ...formData,
-          logoUrl: formData.logoUrl || formData.imageUrl,
+          ...brandBase,
+          logoUrl: formData.logoUrl,
         };
         if (editingItem)
           await api.brands.update(editingItem.id, brandData, currentUser);
         else await api.brands.create(brandData, currentUser);
       } else {
-        // Clean attribute data: Remove UI-only fields
-        const { selectedAttrIds, ...cleanAttrData } = formData;
+        // Clean attribute data: Remove UI-only and category/brand-specific fields
+        const {
+          selectedAttrIds,
+          imageUrl,
+          logoUrl,
+          parentId,
+          sizeGuideId,
+          country,
+          ...cleanAttrData
+        } = formData;
         if (editingItem)
-          await api.attributes.update(editingItem.id, cleanAttrData, currentUser);
+          await api.attributes.update(
+            editingItem.id,
+            cleanAttrData,
+            currentUser
+          );
         else await api.attributes.create(cleanAttrData as any, currentUser);
       }
       setIsModalOpen(false);
@@ -366,61 +405,53 @@ export const ProductConfigManager = () => {
             ?.map((a) => a.id) || [];
         setFormData({
           name: item.name || "",
-          code: "",
           description: item.description || "",
           imageUrl: item.imageUrl || "",
-          logoUrl: "",
           parentId: item.parentId || "",
           sizeGuideId: item.sizeGuideId || "",
-          categoryIds: [],
-          values: [],
           selectedAttrIds: linkedAttrs,
-          type: "info",
         });
       } else if (activeTab === "attribute") {
         setFormData({
           name: item.name || "",
           code: item.code || "",
-          description: "",
-          imageUrl: "",
-          logoUrl: "",
-          parentId: "",
-          sizeGuideId: "",
           categoryIds: item.categoryIds || [],
           values: item.values || [],
-          selectedAttrIds: [],
-          type: item.type || "info",
+          type: item.type || "variant",
         });
       } else if (activeTab === "brand") {
         setFormData({
           name: item.name || "",
-          code: "",
-          description: item.description || "",
-          imageUrl: item.logoUrl || "",
           logoUrl: item.logoUrl || "",
-          parentId: "",
-          sizeGuideId: "",
-          categoryIds: [],
-          values: [],
-          selectedAttrIds: [],
-          type: "info",
+          country: item.country || "",
         });
       }
     } else {
       setEditingItem(null);
-      setFormData({
-        name: "",
-        code: "",
-        description: "",
-        imageUrl: "",
-        logoUrl: "",
-        parentId: "",
-        sizeGuideId: "",
-        categoryIds: [],
-        values: [],
-        selectedAttrIds: [],
-        type: activeTab === "attribute" ? "variant" : "info",
-      });
+      if (activeTab === "category") {
+        setFormData({
+          name: "",
+          description: "",
+          imageUrl: "",
+          parentId: "",
+          sizeGuideId: "",
+          selectedAttrIds: [],
+        });
+      } else if (activeTab === "brand") {
+        setFormData({
+          name: "",
+          logoUrl: "",
+          country: "",
+        });
+      } else {
+        setFormData({
+          name: "",
+          code: "",
+          categoryIds: [],
+          values: [],
+          type: "variant",
+        });
+      }
     }
     setIsModalOpen(true);
   };
@@ -429,9 +460,9 @@ export const ProductConfigManager = () => {
     const file = e.target.files?.[0];
     if (file) {
       const base64 = await handleFileRead(file);
-      if (activeTab === "brand")
-        setFormData({ ...formData, logoUrl: base64, imageUrl: base64 });
-      else setFormData({ ...formData, imageUrl: base64 });
+      if (activeTab === "brand") setFormData({ ...formData, logoUrl: base64 });
+      else if (activeTab === "category")
+        setFormData({ ...formData, imageUrl: base64 });
     }
   };
 
@@ -730,12 +761,27 @@ export const ProductConfigManager = () => {
                         : "Ảnh đại diện"}
                     </label>
                     <div className="relative aspect-square w-full bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden group hover:border-secondary transition">
-                      {formData.logoUrl || formData.imageUrl ? (
+                      {(
+                        activeTab === "brand"
+                          ? formData.logoUrl
+                          : formData.imageUrl
+                      ) ? (
                         <>
                           <img
-                            src={formData.logoUrl || formData.imageUrl}
+                            src={
+                              activeTab === "brand"
+                                ? formData.logoUrl
+                                : formData.imageUrl
+                            }
                             className="w-full h-full object-contain p-4"
                             alt=""
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              if (!target.src.includes("placeholder")) {
+                                target.src =
+                                  "https://via.placeholder.com/400?text=No+Image";
+                              }
+                            }}
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
                             <button
@@ -750,8 +796,9 @@ export const ProductConfigManager = () => {
                               onClick={() =>
                                 setFormData({
                                   ...formData,
-                                  imageUrl: "",
-                                  logoUrl: "",
+                                  [activeTab === "brand"
+                                    ? "logoUrl"
+                                    : "imageUrl"]: "",
                                 })
                               }
                               className="p-3 bg-red-500 text-white rounded-xl hover:scale-110 transition"
@@ -847,6 +894,24 @@ export const ProductConfigManager = () => {
                           }
                         />
                       </div>
+                    ) : activeTab === "brand" ? (
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Quốc gia
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 font-black text-sm outline-none focus:ring-2 focus:ring-secondary/10"
+                          value={formData.country || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              country: e.target.value,
+                            })
+                          }
+                          placeholder="VD: Việt Nam, USA, Japan..."
+                        />
+                      </div>
                     ) : null}
                   </div>
 
@@ -859,16 +924,22 @@ export const ProductConfigManager = () => {
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, type: "variant" })}
+                          onClick={() =>
+                            setFormData({ ...formData, type: "variant" })
+                          }
                           className={`p-4 rounded-2xl border-2 transition text-left ${
                             formData.type === "variant"
                               ? "border-purple-500 bg-purple-50"
                               : "border-gray-200 bg-white hover:border-purple-300"
                           }`}
                         >
-                          <p className={`text-xs font-black uppercase ${
-                            formData.type === "variant" ? "text-purple-600" : "text-gray-600"
-                          }`}>
+                          <p
+                            className={`text-xs font-black uppercase ${
+                              formData.type === "variant"
+                                ? "text-purple-600"
+                                : "text-gray-600"
+                            }`}
+                          >
                             Sinh biến thể
                           </p>
                           <p className="text-[9px] text-gray-400 font-bold mt-1">
@@ -877,16 +948,22 @@ export const ProductConfigManager = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, type: "info" })}
+                          onClick={() =>
+                            setFormData({ ...formData, type: "info" })
+                          }
                           className={`p-4 rounded-2xl border-2 transition text-left ${
                             formData.type === "info"
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 bg-white hover:border-blue-300"
                           }`}
                         >
-                          <p className={`text-xs font-black uppercase ${
-                            formData.type === "info" ? "text-blue-600" : "text-gray-600"
-                          }`}>
+                          <p
+                            className={`text-xs font-black uppercase ${
+                              formData.type === "info"
+                                ? "text-blue-600"
+                                : "text-gray-600"
+                            }`}
+                          >
                             Thông tin bổ sung
                           </p>
                           <p className="text-[9px] text-gray-400 font-bold mt-1">
@@ -938,7 +1015,9 @@ export const ProductConfigManager = () => {
                                 onClick={() =>
                                   setFormData({
                                     ...formData,
-                                    values: formData.values.filter((_, i) => i !== idx),
+                                    values: formData.values.filter(
+                                      (_, i) => i !== idx
+                                    ),
                                   })
                                 }
                                 className="text-gray-400 hover:text-red-500 transition"
@@ -949,7 +1028,7 @@ export const ProductConfigManager = () => {
                           ))
                         ) : (
                           <p className="text-[10px] text-gray-300 font-bold uppercase py-2">
-                            {formData.type === "variant" 
+                            {formData.type === "variant"
                               ? "Chưa có giá trị. Thêm ít nhất 1 giá trị để sinh biến thể."
                               : "Không có giá trị định sẵn. Người dùng có thể nhập tự do."}
                           </p>
@@ -1068,13 +1147,15 @@ export const ProductConfigManager = () => {
                     </div>
                   )}
 
-                  <InputField
-                    label="Mô tả / Ghi chú"
-                    value={formData.description}
-                    onChange={(v: string) =>
-                      setFormData({ ...formData, description: v })
-                    }
-                  />
+                  {activeTab === "category" && (
+                    <InputField
+                      label="Mô tả / Ghi chú"
+                      value={formData.description}
+                      onChange={(v: string) =>
+                        setFormData({ ...formData, description: v })
+                      }
+                    />
+                  )}
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@
 import { supabase } from "../lib/supabase";
 import { OrderStatus } from "../constants/enums";
 import { Order, User, ReturnRequestData, StockIssue } from "../types";
+import { withUpdatedAt } from "./shared.service";
 
 // Circular dependency workaround - will be injected
 let returnRequestService: any;
@@ -182,7 +183,7 @@ export const orderService = {
 
     const { error } = await supabase
       .from("Order")
-      .update({ status: newStatus })
+      .update(withUpdatedAt({ status: newStatus }))
       .eq("id", order.id);
 
     if (error) throw new Error(error.message);
@@ -327,7 +328,7 @@ export const orderService = {
 
     const { error } = await supabase
       .from("Order")
-      .update({ paymentStatus: "REFUNDED" })
+      .update(withUpdatedAt({ paymentStatus: "REFUNDED" }))
       .eq("id", order.id);
 
     if (error) throw new Error(error.message);
@@ -398,7 +399,7 @@ export const orderService = {
       // Step 3: Update OrderItem.returnStatus về NONE
       const { error: itemError } = await supabase
         .from("OrderItem")
-        .update({ returnStatus: "NONE" })
+        .update(withUpdatedAt({ returnStatus: "NONE" }))
         .eq("id", request.orderItemId);
 
       if (itemError) {
@@ -446,12 +447,14 @@ export const orderService = {
 
     const { error } = await supabase
       .from("Order")
-      .update({
-        status: OrderStatus.SHIPPING,
-        courierName: info.courierName,
-        trackingNumber: info.trackingNumber,
-        deliveryPerson: info.deliveryPerson,
-      })
+      .update(
+        withUpdatedAt({
+          status: OrderStatus.SHIPPING,
+          courierName: info.courierName,
+          trackingNumber: info.trackingNumber,
+          deliveryPerson: info.deliveryPerson,
+        })
+      )
       .eq("id", order.id);
 
     if (error) throw new Error(error.message);
@@ -501,12 +504,14 @@ export const orderService = {
 
     const { error } = await supabase
       .from("Order")
-      .update({
-        status: OrderStatus.COMPLETED,
-        deliveryDate: new Date().toISOString(),
-        paymentStatus:
-          order.paymentMethod === "COD" ? "PAID" : order.paymentStatus,
-      })
+      .update(
+        withUpdatedAt({
+          status: OrderStatus.COMPLETED,
+          deliveryDate: new Date().toISOString(),
+          paymentStatus:
+            order.paymentMethod === "COD" ? "PAID" : order.paymentStatus,
+        })
+      )
       .eq("id", order.id);
 
     if (error) throw new Error(error.message);
@@ -519,7 +524,7 @@ export const orderService = {
 
     const { error } = await supabase
       .from("Order")
-      .update({ status: OrderStatus.DELIVERY_FAILED })
+      .update(withUpdatedAt({ status: OrderStatus.DELIVERY_FAILED }))
       .eq("id", order.id);
 
     if (error) throw new Error(error.message);
