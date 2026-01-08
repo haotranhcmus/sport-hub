@@ -1,0 +1,350 @@
+import { PrismaClient } from "@prisma/client";
+
+export async function seedAttributes(prisma: PrismaClient) {
+  console.log("🎨 Creating Product Attributes...");
+
+  // Lấy tất cả danh mục con (có parentId)
+  const subcategories = await prisma.category.findMany({
+    where: {
+      parentId: { not: null },
+    },
+  });
+
+  // Tất cả danh mục con
+  const allSubcatIds = subcategories.map((c) => c.id);
+  
+  // Danh mục con có giày
+  const giaySubcatIds = subcategories.filter((c) => 
+    c.slug?.includes("giay")
+  ).map((c) => c.id);
+
+  // ALL SUBCATEGORIES - Màu sắc
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-mau-sac",
+      name: "Màu sắc",
+      code: "mau-sac",
+      type: "color",
+      values: [
+        "Đen",
+        "Trắng",
+        "Đỏ",
+        "Xanh dương",
+        "Xanh lá",
+        "Vàng",
+        "Cam",
+        "Tím",
+        "Hồng",
+        "Xám",
+        "Nâu",
+        "Be",
+      ],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Giày subcategories - Size giày
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-size-giay",
+      name: "Size giày",
+      code: "size-giay",
+      type: "size",
+      values: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45"],
+      categoryIds: giaySubcatIds,
+      categories: {
+        connect: giaySubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Giày subcategories - Size giày
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-size-giay",
+      name: "Size giày",
+      code: "size-giay",
+      type: "size",
+      values: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45"],
+      categoryIds: giaySubcatIds,
+      categories: {
+        connect: giaySubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // ALL SUBCATEGORIES - Size áo
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-size-ao",
+      name: "Size áo",
+      code: "size-ao",
+      type: "size",
+      values: ["XS", "S", "M", "L", "XL", "XXL"],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // ALL SUBCATEGORIES - Size quần
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-size-quan",
+      name: "Size quần",
+      code: "size-quan",
+      type: "size",
+      values: ["XS", "S", "M", "L", "XL", "XXL"],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // ALL SUBCATEGORIES - Size quần
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-size-quan",
+      name: "Size quần",
+      code: "size-quan",
+      type: "size",
+      values: ["XS", "S", "M", "L", "XL", "XXL"],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Chất liệu giày - cho danh mục giày
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-chat-lieu-giay",
+      name: "Chất liệu giày",
+      code: "chat-lieu-giay",
+      type: "text",
+      values: [
+        "Da thật",
+        "Da tổng hợp",
+        "Vải mesh",
+        "Vải canvas",
+        "Flyknit",
+        "Primeknit",
+      ],
+      categoryIds: giaySubcatIds,
+      categories: {
+        connect: giaySubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Chất liệu áo quần - tất cả subcategories
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-chat-lieu-ao-quan",
+      name: "Chất liệu áo/quần",
+      code: "chat-lieu-ao-quan",
+      type: "text",
+      values: [
+        "Cotton",
+        "Polyester",
+        "Nylon",
+        "Spandex",
+        "Dri-FIT",
+        "Climacool",
+        "Coolmax",
+      ],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Chất liệu áo quần - tất cả subcategories
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-chat-lieu-ao-quan",
+      name: "Chất liệu áo/quần",
+      code: "chat-lieu-ao-quan",
+      type: "text",
+      values: [
+        "Cotton",
+        "Polyester",
+        "Nylon",
+        "Spandex",
+        "Dri-FIT",
+        "Climacool",
+        "Coolmax",
+      ],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Công nghệ đế giày - cho danh mục giày
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-cong-nghe-de",
+      name: "Công nghệ đế",
+      code: "cong-nghe-de",
+      type: "text",
+      values: [
+        "Nike Zoom Air",
+        "Nike React",
+        "Adidas Boost",
+        "Adidas Bounce",
+        "Puma NITRO",
+        "Asics GEL",
+        "Mizuno Wave",
+      ],
+      categoryIds: giaySubcatIds,
+      categories: {
+        connect: giaySubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Loại đế giày bóng đá - chỉ cho giày bóng đá
+  const giayBongDaId = subcategories.find((c) => c.id === "cat-bd-giay")?.id;
+  if (giayBongDaId) {
+    await prisma.productAttribute.create({
+      data: {
+        id: "attr-loai-de-bong-da",
+        name: "Loại đế bóng đá",
+        code: "loai-de-bong-da",
+        type: "text",
+        values: [
+          "FG (Firm Ground)",
+          "AG (Artificial Ground)",
+          "SG (Soft Ground)",
+          "TF (Turf)",
+          "IC (Indoor Court)",
+        ],
+        categoryIds: [giayBongDaId],
+        categories: {
+          connect: [{ id: giayBongDaId }],
+        },
+      },
+    });
+  }
+
+  // Kiểu cổ giày - cho danh mục giày
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-kieu-co-giay",
+      name: "Kiểu cổ giày",
+      code: "kieu-co-giay",
+      type: "text",
+      values: ["Cổ thấp", "Cổ cao", "Cổ vừa"],
+      categoryIds: giaySubcatIds,
+      categories: {
+        connect: giaySubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Giới tính - tất cả subcategories
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-gioi-tinh",
+      name: "Giới tính",
+      code: "gioi-tinh",
+      type: "text",
+      values: ["Nam", "Nữ", "Unisex"],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Độ đệm - cho các giày thể thao (không bao gồm bóng đá)
+  const giayThethaoSubcatIds = subcategories.filter((c) => 
+    c.slug?.includes("giay") && 
+    !c.slug.includes("bong-da")
+  ).map((c) => c.id);
+
+  if (giayThethaoSubcatIds.length > 0) {
+    await prisma.productAttribute.create({
+      data: {
+        id: "attr-do-dem",
+        name: "Độ đệm",
+        code: "do-dem",
+        type: "text",
+        values: ["Thấp", "Trung bình", "Cao", "Tối đa"],
+        categoryIds: giayThethaoSubcatIds,
+        categories: {
+          connect: giayThethaoSubcatIds.map((id) => ({ id })),
+        },
+      },
+    });
+  }
+
+  // Trọng lượng - cho danh mục giày
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-trong-luong",
+      name: "Trọng lượng",
+      code: "trong-luong",
+      type: "text",
+      values: ["Nhẹ (< 250g)", "Trung bình (250-350g)", "Nặng (> 350g)"],
+      categoryIds: giaySubcatIds,
+      categories: {
+        connect: giaySubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Kiểu áo - tất cả subcategories
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-kieu-ao",
+      name: "Kiểu áo",
+      code: "kieu-ao",
+      type: "text",
+      values: [
+        "Áo thun",
+        "Áo polo",
+        "Áo ba lỗ",
+        "Áo dài tay",
+        "Áo hoodie",
+        "Áo khoác",
+      ],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  // Kiểu quần - tất cả subcategories
+  await prisma.productAttribute.create({
+    data: {
+      id: "attr-kieu-quan",
+      name: "Kiểu quần",
+      code: "kieu-quan",
+      type: "text",
+      values: [
+        "Quần short",
+        "Quần dài",
+        "Quần lửng",
+        "Quần jogger",
+        "Quần tights",
+      ],
+      categoryIds: allSubcatIds,
+      categories: {
+        connect: allSubcatIds.map((id) => ({ id })),
+      },
+    },
+  });
+
+  console.log("✅ Created 14 product attributes for subcategories only");
+}

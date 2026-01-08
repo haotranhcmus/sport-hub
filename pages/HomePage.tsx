@@ -9,11 +9,17 @@ import { useProducts } from "../hooks/useProductsQuery";
 
 export const HomePage = () => {
   // Use TanStack Query for automatic caching
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: allCategories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: () => api.categories.list(),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // Lọc chỉ lấy danh mục cha (không có parentId)
+  const parentCategories = useMemo(
+    () => allCategories.filter((cat) => !cat.parentId),
+    [allCategories]
+  );
 
   const { data: allProducts = [], isLoading: productsLoading } = useProducts();
 
@@ -61,7 +67,7 @@ export const HomePage = () => {
           <h2 className="text-2xl font-bold text-primary">Danh mục nổi bật</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {categories.map((cat) => (
+          {parentCategories.map((cat) => (
             <Link
               to={`/products?category=${cat.id}`}
               key={cat.id}

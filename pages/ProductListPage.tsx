@@ -21,11 +21,23 @@ export const ProductListPage = () => {
 
   // Use TanStack Query for caching
   const { data: allProducts = [], isLoading: productsLoading } = useProducts();
-  const { data: categories = [] } = useQuery({
+  const { data: allCategories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: () => api.categories.list(),
     staleTime: 10 * 60 * 1000,
   });
+
+  // Tách danh mục cha và danh mục con
+  const parentCategories = useMemo(
+    () => allCategories.filter((cat) => !cat.parentId),
+    [allCategories]
+  );
+
+  const subcategories = useMemo(
+    () => allCategories.filter((cat) => cat.parentId),
+    [allCategories]
+  );
+
   const { data: brands = [] } = useQuery({
     queryKey: ["brands"],
     queryFn: () => api.brands.list(),
@@ -72,8 +84,23 @@ export const ProductListPage = () => {
       const hasStock = p.variants?.some((v) => v.stockQuantity > 0);
       if (!hasStock) return false;
 
-      // 3. Lọc theo Danh mục
-      if (selectedCategory && p.categoryId !== selectedCategory) return false;
+      // 3. Lọc theo Danh mục (bao gồm cả danh mục cha và con)
+      if (selectedCategory) {
+        // Nếu chọn danh mục cha, hiển thị tất cả sản phẩm của các danh mục con
+        const selectedCat = allCategories.find(
+          (c) => c.id === selectedCategory
+        );
+        if (selectedCat && !selectedCat.parentId) {
+          // Đây là danh mục cha, lấy tất cả danh mục con
+          const childCategoryIds = subcategories
+            .filter((c) => c.parentId === selectedCategory)
+            .map((c) => c.id);
+          if (!childCategoryIds.includes(p.categoryId)) return false;
+        } else {
+          // Đây là danh mục con
+          if (p.categoryId !== selectedCategory) return false;
+        }
+      }
 
       // 4. Tìm kiếm gõ gần đúng không dấu
       if (searchQuery) {
@@ -118,6 +145,8 @@ export const ProductListPage = () => {
     });
   }, [
     allProducts,
+    allCategories,
+    subcategories,
     selectedCategory,
     searchQuery,
     selectedBrands,
@@ -183,23 +212,58 @@ export const ProductListPage = () => {
                 >
                   Tất cả sản phẩm
                 </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      const newParams = new URLSearchParams(searchParams);
-                      newParams.set("category", cat.id);
-                      setSearchParams(newParams);
-                    }}
-                    className={`block w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition ${
-                      selectedCategory === cat.id
-                        ? "bg-secondary text-white shadow-lg shadow-blue-500/20"
-                        : "hover:bg-gray-50 text-gray-600"
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
+                {parentCategories.map((parentCat) => {
+                  const children = subcategories.filter(
+                    (c) => c.parentId === parentCat.id
+                  );
+                  const isParentSelected = selectedCategory === parentCat.id;
+                  const hasSelectedChild = children.some(
+                    (c) => c.id === selectedCategory
+                  );
+
+                  return (
+                    <div key={parentCat.id} className="space-y-1">
+                      <button
+                        onClick={() => {
+                          const newParams = new URLSearchParams(searchParams);
+                          newParams.set("category", parentCat.id);
+                          setSearchParams(newParams);
+                        }}
+                        className={`block w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition ${
+                          isParentSelected
+                            ? "bg-secondary text-white shadow-lg shadow-blue-500/20"
+                            : "hover:bg-gray-50 text-gray-600"
+                        }`}
+                      >
+                        {parentCat.name}
+                      </button>
+                      {(isParentSelected || hasSelectedChild) &&
+                        children.length > 0 && (
+                          <div className="ml-4 space-y-1 animate-in slide-in-from-left-2">
+                            {children.map((child) => (
+                              <button
+                                key={child.id}
+                                onClick={() => {
+                                  const newParams = new URLSearchParams(
+                                    searchParams
+                                  );
+                                  newParams.set("category", child.id);
+                                  setSearchParams(newParams);
+                                }}
+                                className={`block w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                                  selectedCategory === child.id
+                                    ? "bg-blue-100 text-secondary"
+                                    : "hover:bg-gray-50 text-gray-500"
+                                }`}
+                              >
+                                → {child.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -304,7 +368,7 @@ export const ProductListPage = () => {
           <div>
             <h1 className="text-3xl font-black text-gray-800 tracking-tight">
               {selectedCategory
-                ? categories.find((c) => c.id === selectedCategory)?.name
+                ? allCategories.find((c) => c.id === selectedCategory)?.name
                 : "TẤT CẢ SẢN PHẨM"}
             </h1>
             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">
