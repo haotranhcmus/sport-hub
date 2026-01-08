@@ -15,12 +15,17 @@ export const withUpdatedAt = (data: any) => ({
 
 // Helper function to add timestamps to SystemLog
 export const createSystemLog = (logData: any) => {
-  const now = new Date().toISOString();
   return {
-    ...logData,
     id: crypto.randomUUID(),
-    createdAt: now,
-    updatedAt: now,
+    actorId: logData.actorId,
+    actorName: logData.actorName,
+    actionType: logData.action || logData.actionType,
+    targetId: logData.recordId || logData.targetId,
+    oldValue: logData.oldValue || null,
+    newValue: logData.newValue || null,
+    ipAddress: logData.ipAddress || "unknown",
+    description: logData.description,
+    timestamp: new Date().toISOString(),
   };
 };
 

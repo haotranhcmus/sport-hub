@@ -55,7 +55,7 @@ export const AuditLogsView = () => {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in">
+    <div className="space-y-10 animate-in fade-in p-6 md:p-8 w-full">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">
@@ -193,7 +193,7 @@ export const SystemManager = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in p-6 md:p-8 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h2 className="text-2xl font-black uppercase tracking-tight">
@@ -354,7 +354,7 @@ export const SystemConfigManager = () => {
   if (!config) return null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in">
+    <div className="w-full space-y-10 animate-in fade-in p-6 md:p-8">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">

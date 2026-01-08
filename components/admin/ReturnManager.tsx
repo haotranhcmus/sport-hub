@@ -357,7 +357,7 @@ export const ReturnManager = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in pb-20">
+    <div className="space-y-8 animate-in fade-in pb-20 p-6 md:p-8 w-full">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">

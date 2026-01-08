@@ -255,7 +255,7 @@ export const Layout = () => {
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className="flex-grow w-full max-w-full px-4 md:px-8 py-8">
         <Outlet />
       </main>
 

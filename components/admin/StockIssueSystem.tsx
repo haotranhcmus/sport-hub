@@ -41,7 +41,7 @@ export const StockIssueManager = () => {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in text-slate-900">
+    <div className="space-y-8 animate-in fade-in text-slate-900 p-6 md:p-8 w-full">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight">

@@ -18,7 +18,7 @@ export const systemService = {
     const { data, error } = await supabase
       .from("SystemLog")
       .select("*")
-      .order("createdAt", { ascending: false });
+      .order("timestamp", { ascending: false });
 
     if (error) throw new Error(error.message);
     return data || [];

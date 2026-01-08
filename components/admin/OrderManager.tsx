@@ -226,7 +226,7 @@ export const OrderListManager = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in pb-10">
+    <div className="space-y-8 animate-in fade-in pb-10 p-6 md:p-8 w-full">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">
@@ -382,15 +382,15 @@ export const OrderListManager = () => {
       {/* Orders Table */}
       <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[1000px]">
+          <table className="w-full text-left">
             <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
               <tr>
-                <th className="px-8 py-6">Mã đơn / Ngày</th>
-                <th className="px-6 py-6">Khách hàng</th>
-                <th className="px-6 py-6 text-right">Tổng tiền</th>
-                <th className="px-6 py-6 text-center">Thanh toán</th>
-                <th className="px-6 py-6 text-center">Trạng thái</th>
-                <th className="px-8 py-6 text-right">Thao tác</th>
+                <th className="px-4 py-4 w-[160px]">Mã đơn / Ngày</th>
+                <th className="px-3 py-4 w-[180px]">Khách hàng</th>
+                <th className="px-3 py-4 text-right w-[120px]">Tổng tiền</th>
+                <th className="px-3 py-4 text-center w-[100px]">Thanh toán</th>
+                <th className="px-3 py-4 text-center w-[140px]">Trạng thái</th>
+                <th className="px-4 py-4 text-center w-[120px]">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -402,28 +402,31 @@ export const OrderListManager = () => {
                     onClick={() => handleOpenModal(order)}
                     className="hover:bg-gray-50/50 transition cursor-pointer group"
                   >
-                    <td className="px-8 py-6">
-                      <p className="text-sm font-black text-secondary uppercase tracking-tight">
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-black text-secondary uppercase tracking-tight truncate">
                         {order.orderCode}
                       </p>
-                      <p className="text-[10px] font-bold text-gray-400 mt-1">
-                        {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5">
+                        {new Date(order.createdAt).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}
                       </p>
                     </td>
-                    <td className="px-6 py-6">
-                      <p className="text-sm font-black text-gray-800 uppercase leading-none">
+                    <td className="px-3 py-4">
+                      <p className="text-xs font-black text-gray-800 uppercase leading-tight truncate">
                         {order.customerName}
                       </p>
-                      <p className="text-[10px] font-bold text-gray-400 mt-1">
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5">
                         {order.customerPhone}
                       </p>
                     </td>
-                    <td className="px-6 py-6 text-right font-black text-red-600">
+                    <td className="px-3 py-4 text-right font-black text-red-600 text-xs whitespace-nowrap">
                       {order.totalAmount.toLocaleString()}đ
                     </td>
-                    <td className="px-6 py-6 text-center">
+                    <td className="px-3 py-4 text-center">
                       <span
-                        className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase shadow-sm ${
+                        className={`inline-block px-2.5 py-1 rounded-full text-[8px] font-black uppercase shadow-sm whitespace-nowrap ${
                           order.paymentStatus === "PAID"
                             ? "bg-green-100 text-green-700"
                             : order.paymentStatus === "PENDING_REFUND"
@@ -434,28 +437,28 @@ export const OrderListManager = () => {
                         }`}
                       >
                         {order.paymentStatus === "PAID"
-                          ? "Đã trả"
+                          ? "ĐÃ TRẢ"
                           : order.paymentStatus === "PENDING_REFUND"
-                          ? "Chờ hoàn"
-                          : "Chưa trả"}
+                          ? "CHỜ HOÀN"
+                          : "CHƯA TRẢ"}
                       </span>
                     </td>
-                    <td className="px-6 py-6 text-center">
+                    <td className="px-3 py-4 text-center">
                       <div
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm ${statusUI.css}`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[8px] font-black uppercase shadow-sm whitespace-nowrap ${statusUI.css}`}
                       >
                         {statusUI.icon} {statusUI.label}
                       </div>
                     </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition">
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
                         {order.status === OrderStatus.PENDING_CONFIRMATION && (
                           <button
                             onClick={(e) => handleQuickConfirm(e, order.id)}
-                            className="px-4 py-2 bg-green-500 text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-green-500/20 active:scale-95 transition"
+                            className="p-2 bg-green-500 text-white rounded-lg text-[9px] font-black uppercase shadow-lg shadow-green-500/20 active:scale-95 transition"
                             title="Duyệt nhanh"
                           >
-                            <CheckCircle size={14} />
+                            <CheckCircle size={12} />
                           </button>
                         )}
                         <button
@@ -463,9 +466,9 @@ export const OrderListManager = () => {
                             e.stopPropagation();
                             handleOpenModal(order);
                           }}
-                          className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-secondary rounded-xl shadow-sm transition transform hover:scale-110"
+                          className="p-2 bg-white border border-gray-100 text-gray-400 hover:text-secondary rounded-lg shadow-sm transition transform hover:scale-110"
                         >
-                          <Eye size={18} />
+                          <Eye size={16} />
                         </button>
                       </div>
                     </td>

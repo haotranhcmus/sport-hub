@@ -19,6 +19,7 @@ async function main() {
   console.log("🗑️  Clearing existing data...");
 
   await prisma.systemLog.deleteMany();
+  await prisma.returnRequest.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.review.deleteMany();

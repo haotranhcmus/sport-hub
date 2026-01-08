@@ -104,7 +104,7 @@ export const SupplierManager = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in">
+    <div className="space-y-8 animate-in fade-in p-6 md:p-8 w-full">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">

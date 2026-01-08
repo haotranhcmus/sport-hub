@@ -71,7 +71,7 @@ export const ReportsManager = () => {
     );
 
   return (
-    <div className="space-y-10 animate-in fade-in pb-20">
+    <div className="space-y-10 animate-in fade-in pb-20 p-6 md:p-8 w-full">
       {/* Header section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>

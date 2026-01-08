@@ -115,7 +115,7 @@ export const ProductManager = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in">
+    <div className="space-y-8 animate-in fade-in p-6 md:p-8 w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">
@@ -340,7 +340,7 @@ const ProductForm = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 animate-in slide-in-from-bottom-8">
+    <div className="w-full space-y-10 animate-in slide-in-from-bottom-8 p-6 md:p-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <button

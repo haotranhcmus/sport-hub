@@ -134,9 +134,11 @@ export const productService = {
     const cleanData = {
       id: productId,
       productCode: productData.productCode,
+      modelCode: productData.modelCode || null,
       name: productData.name,
       slug,
       description: productData.description || "Chưa có mô tả",
+      costPrice: productData.costPrice ? Number(productData.costPrice) : null,
       basePrice: Number(productData.basePrice) || 0,
       promotionalPrice: productData.promotionalPrice
         ? Number(productData.promotionalPrice)
@@ -152,6 +154,8 @@ export const productService = {
       attributes: productData.attributes || {},
       sizeGuideId: productData.sizeGuideId || null,
       condition: productData.condition || null,
+      createdAt: now,
+      updatedAt: now,
     };
 
     console.log("📦 [PRODUCT CREATE] Clean data:", cleanData);
@@ -171,9 +175,8 @@ export const productService = {
 
     await supabase.from("SystemLog").insert(
       createSystemLog({
-        action: "CREATE",
-        tableName: "Product",
-        recordId: data.id,
+        actionType: "CREATE",
+        targetId: data.id,
         description: `Tạo sản phẩm: ${productData.name}`,
         actorId: user.id,
         actorName: user.fullName,
@@ -195,9 +198,8 @@ export const productService = {
 
     await supabase.from("SystemLog").insert(
       createSystemLog({
-        action: "UPDATE",
-        tableName: "Product",
-        recordId: id,
+        actionType: "UPDATE",
+        targetId: id,
         description: "Cập nhật sản phẩm",
         actorId: user.id,
         actorName: user.fullName,
@@ -245,7 +247,7 @@ export const productService = {
               color: variant.color,
               stockQuantity: variant.stockQuantity,
               priceAdjustment: variant.priceAdjustment,
-              imageUrl: variant.imageUrl,
+              imageUrl: variant.imageUrl || null,
               status: variant.status,
               updatedAt: now,
             })
@@ -273,7 +275,7 @@ export const productService = {
             color: variant.color,
             stockQuantity: variant.stockQuantity || 0,
             priceAdjustment: variant.priceAdjustment || 0,
-            imageUrl: variant.imageUrl || "",
+            imageUrl: variant.imageUrl || null,
             status: variant.status || "active",
             createdAt: now,
             updatedAt: now,
@@ -294,8 +296,8 @@ export const productService = {
     // Log to SystemLog (non-blocking)
     await supabase.from("SystemLog").insert(
       createSystemLog({
-        action: "UPDATE",
-        tableName: "ProductVariant",
+        actionType: "UPDATE",
+        targetId: productId,
         description: `Lưu ${successCount}/${variants.length} biến thể - ${productId}`,
         actorId: user.id,
         actorName: user.fullName,
@@ -345,9 +347,8 @@ export const productService = {
 
     await supabase.from("SystemLog").insert(
       createSystemLog({
-        action: "DELETE",
-        tableName: "ProductVariant",
-        recordId: variantId,
+        actionType: "DELETE",
+        targetId: variantId,
         description: `Xóa variant ${variantId}`,
         actorId: user.id,
         actorName: user.fullName,

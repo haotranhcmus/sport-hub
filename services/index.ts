@@ -296,6 +296,7 @@ const attributeService = {
   },
   create: async (attrData: any, user: User) => {
     const now = new Date().toISOString();
+    console.log("🔧 Creating attribute with data:", attrData);
     const { data, error } = await supabase
       .from("ProductAttribute")
       .insert({
@@ -306,7 +307,11 @@ const attributeService = {
       })
       .select()
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("❌ Error creating attribute:", error);
+      throw new Error(error.message);
+    }
+    console.log("✅ Attribute created:", data);
     await supabase.from("SystemLog").insert(
       createSystemLog({
         action: "CREATE",
@@ -434,6 +439,7 @@ const sizeGuideService = {
         actorName: user.fullName,
       })
     );
+    return true;
   },
 };
 
@@ -580,7 +586,7 @@ const inventoryService = {
         id: crypto.randomUUID(),
         code,
         date: stocktakeData.date || now,
-        actorName: user.fullName,
+        auditorName: user.fullName, // Fixed: use auditorName instead of actorName
         createdAt: now,
         updatedAt: now,
       })
@@ -695,8 +701,10 @@ const reportService = {
         size: v.size,
         color: v.color,
         stockQuantity: v.stockQuantity || 0,
-        costPrice: v.product?.costPrice || 0,
-        inventoryValue: (v.stockQuantity || 0) * (v.product?.costPrice || 0),
+        costPrice: v.product?.costPrice || v.product?.basePrice || 0, // Use basePrice if costPrice is null
+        inventoryValue:
+          (v.stockQuantity || 0) *
+          (v.product?.costPrice || v.product?.basePrice || 0),
         thumbnail: v.imageUrl || v.product?.thumbnailUrl,
         isLowStock: (v.stockQuantity || 0) < 10,
       }));

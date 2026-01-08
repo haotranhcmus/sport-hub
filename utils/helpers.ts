@@ -9,6 +9,15 @@ export const removeAccents = (str: string): string => {
     .toLowerCase();
 };
 
+export const slugify = (str: string): string => {
+  return removeAccents(str)
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+};
+
 export const formatCurrency = (amount: number): string => {
   return amount.toLocaleString("vi-VN") + "đ";
 };

@@ -29,6 +29,7 @@ import { api } from "../../services";
 import { Category, Brand, ProductAttribute, SizeGuide } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import { InputField } from "./SharedUI";
+import { slugify } from "../../utils/helpers";
 
 // Helper: Đọc file sang Base64
 const handleFileRead = (file: File): Promise<string> => {
@@ -313,12 +314,60 @@ export const ProductConfigManager = () => {
         // Convert empty foreign keys to null
         const categoryData = {
           ...cleanData,
+          slug: editingItem ? cleanData.slug : slugify(cleanData.name), // Auto-generate slug for new items
           parentId: cleanData.parentId || null,
           sizeGuideId: cleanData.sizeGuideId || null,
         };
-        if (editingItem)
-          await api.categories.update(editingItem.id, categoryData, currentUser);
-        else await api.categories.create(categoryData, currentUser);
+
+        // Save category first
+        let savedCategory;
+        if (editingItem) {
+          savedCategory = await api.categories.update(
+            editingItem.id,
+            categoryData,
+            currentUser
+          );
+        } else {
+          savedCategory = await api.categories.create(
+            categoryData,
+            currentUser
+          );
+        }
+
+        // Update attribute relationships
+        // For all attributes, update their categoryIds to include/exclude this category
+        const categoryId = savedCategory.id;
+        const selectedIds = selectedAttrIds || [];
+
+        // Get all attributes
+        const allAttrs = attributes || [];
+
+        for (const attr of allAttrs) {
+          const currentCategoryIds = attr.categoryIds || [];
+          const shouldInclude = selectedIds.includes(attr.id);
+          const isIncluded = currentCategoryIds.includes(categoryId);
+
+          // If should include but not included, add it
+          if (shouldInclude && !isIncluded) {
+            await api.attributes.update(
+              attr.id,
+              { categoryIds: [...currentCategoryIds, categoryId] },
+              currentUser
+            );
+          }
+          // If should not include but is included, remove it
+          else if (!shouldInclude && isIncluded) {
+            await api.attributes.update(
+              attr.id,
+              {
+                categoryIds: currentCategoryIds.filter(
+                  (id: string) => id !== categoryId
+                ),
+              },
+              currentUser
+            );
+          }
+        }
       } else if (activeTab === "brand") {
         // Clean brand data: Remove UI-only and attribute-specific fields, plus fields Brand doesn't have
         const {
@@ -335,6 +384,7 @@ export const ProductConfigManager = () => {
         } = formData;
         const brandData = {
           ...brandBase,
+          slug: editingItem ? brandBase.slug : slugify(formData.name), // Auto-generate slug for new items
           logoUrl: formData.logoUrl,
         };
         if (editingItem)
@@ -349,8 +399,12 @@ export const ProductConfigManager = () => {
           parentId,
           sizeGuideId,
           country,
+          slug, // Remove slug - attributes don't have slug field
           ...cleanAttrData
         } = formData;
+
+        console.log("💾 Saving attribute data:", cleanAttrData);
+
         if (editingItem)
           await api.attributes.update(
             editingItem.id,
@@ -405,6 +459,7 @@ export const ProductConfigManager = () => {
             ?.map((a) => a.id) || [];
         setFormData({
           name: item.name || "",
+          slug: item.slug || "",
           description: item.description || "",
           imageUrl: item.imageUrl || "",
           parentId: item.parentId || "",
@@ -422,6 +477,7 @@ export const ProductConfigManager = () => {
       } else if (activeTab === "brand") {
         setFormData({
           name: item.name || "",
+          slug: item.slug || "",
           logoUrl: item.logoUrl || "",
           country: item.country || "",
         });
@@ -509,7 +565,7 @@ export const ProductConfigManager = () => {
   }, [activeTab, categories, brands, attributes, searchQuery]);
 
   return (
-    <div className="space-y-8 animate-in fade-in">
+    <div className="space-y-8 animate-in fade-in p-6 md:p-8 w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">

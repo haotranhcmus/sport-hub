@@ -203,6 +203,15 @@ export const returnRequestService = {
       throw new Error(error.message);
     }
 
+    // Update Order status to RETURN_PROCESSING
+    await supabase
+      .from("Order")
+      .update({
+        status: OrderStatus.RETURN_PROCESSING,
+        updatedAt: now,
+      })
+      .eq("id", data.orderId);
+
     console.log("✅ [RETURN REQUEST APPROVE] Success:", data.requestCode);
 
     await supabase.from("SystemLog").insert(
@@ -364,6 +373,15 @@ export const returnRequestService = {
       // Don't throw - allow the return request to complete even if stock update fails
     }
 
+    // Update Order status - still in RETURN_PROCESSING
+    await supabase
+      .from("Order")
+      .update({
+        status: OrderStatus.RETURN_PROCESSING,
+        updatedAt: now,
+      })
+      .eq("id", returnRequest.orderId);
+
     await supabase.from("SystemLog").insert(
       createSystemLog({
         action: "UPDATE",
@@ -425,6 +443,15 @@ export const returnRequestService = {
         updatedAt: now,
       })
       .eq("id", returnRequest.orderItemId);
+
+    // Update Order status to RETURN_COMPLETED
+    await supabase
+      .from("Order")
+      .update({
+        status: OrderStatus.RETURN_COMPLETED,
+        updatedAt: now,
+      })
+      .eq("id", returnRequest.orderId);
 
     // AUTO CREATE STOCK ISSUE for EXCHANGE (Inventory Out)
     if (returnRequest.type === ReturnType.EXCHANGE && user) {

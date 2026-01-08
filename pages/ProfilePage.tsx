@@ -239,11 +239,19 @@ const OrderHistory = () => {
     "all" | OrderStatus | "returns"
   >("all");
 
-  useEffect(() => {
+  const fetchOrders = () => {
+    setLoading(true);
     api.orders.list().then((res) => {
       setOrders(res);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    // Auto refresh every 30 seconds to sync with admin updates
+    const interval = setInterval(fetchOrders, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const ORDER_TABS = [
@@ -339,13 +347,26 @@ const OrderHistory = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-xl md:text-2xl font-black text-gray-800 uppercase tracking-tight">
-          Lịch sử đơn hàng
-        </h2>
-        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-          Theo dõi và quản lý giao dịch
-        </p>
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl md:text-2xl font-black text-gray-800 uppercase tracking-tight">
+            Lịch sử đơn hàng
+          </h2>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+            Theo dõi và quản lý giao dịch
+          </p>
+        </div>
+        <button
+          onClick={fetchOrders}
+          disabled={loading}
+          className="p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition active:scale-95 disabled:opacity-50"
+          title="Làm mới danh sách"
+        >
+          <RefreshCw
+            size={18}
+            className={`text-gray-400 ${loading ? "animate-spin" : ""}`}
+          />
+        </button>
       </div>
 
       <div className="relative">

@@ -202,7 +202,7 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 backdrop-blur-md bg-black/60 animate-in fade-in">
-      <div className="bg-white rounded-[40px] w-full max-w-6xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95">
+      <div className="bg-white rounded-[40px] w-[95vw] max-w-[1800px] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95">
         {/* Header */}
         <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <div className="flex items-center gap-6">

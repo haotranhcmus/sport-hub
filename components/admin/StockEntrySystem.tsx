@@ -65,7 +65,7 @@ export const InventoryManager = () => {
     );
 
   return (
-    <div className="space-y-8 animate-in fade-in text-slate-900">
+    <div className="space-y-8 animate-in fade-in text-slate-900 p-6 md:p-8 w-full">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight">
@@ -323,7 +323,7 @@ const StockEntryForm = ({ suppliers, products, onBack, onSaved }: any) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto animate-in slide-in-from-bottom-6 text-slate-900">
+    <div className="w-full animate-in slide-in-from-bottom-6 text-slate-900 p-6 md:p-8">
       <div className="flex items-center gap-6 mb-10">
         <button
           onClick={onBack}
