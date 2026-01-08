@@ -92,6 +92,28 @@ export const ProductManager = () => {
     setView("form");
   };
 
+  const handleDelete = async (productId: string) => {
+    if (!currentUser) return;
+
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa sản phẩm "${product.name}"?\n\n` +
+        `Lưu ý: Không thể xóa nếu sản phẩm đã có đơn hàng.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await api.products.delete(productId, currentUser);
+      await refetchProducts();
+      alert("Xóa sản phẩm thành công!");
+    } catch (error: any) {
+      alert(error.message || "Có lỗi xảy ra khi xóa sản phẩm");
+    }
+  };
+
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -226,7 +248,10 @@ export const ProductManager = () => {
                     >
                       <Edit3 size={16} />
                     </button>
-                    <button className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-red-500 rounded-xl shadow-sm">
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-red-500 rounded-xl shadow-sm"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </div>

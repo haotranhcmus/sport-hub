@@ -127,9 +127,11 @@ export const useAddToCart = (userId: string | undefined) => {
       }
     },
 
-    // Refetch on success/error
-    onSettled: () => {
-      if (userId) {
+    // Refetch only on error to sync with server
+    // Don't invalidate on success - optimistic update already applied
+    onSettled: (data, error) => {
+      if (userId && error) {
+        // Only refetch if there was an error
         queryClient.invalidateQueries({ queryKey: cartKeys.user(userId) });
       }
     },

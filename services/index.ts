@@ -200,6 +200,28 @@ const categoryService = {
     return data;
   },
   delete: async (id: string, user: User) => {
+    // Check if category has child categories
+    const { data: childCategories } = await supabase
+      .from("Category")
+      .select("id")
+      .eq("parentId", id);
+    if (childCategories && childCategories.length > 0) {
+      throw new Error(
+        `Không thể xóa! Danh mục này có ${childCategories.length} danh mục con. Vui lòng xóa danh mục con trước.`
+      );
+    }
+
+    // Check if category has products
+    const { data: products } = await supabase
+      .from("Product")
+      .select("id")
+      .eq("categoryId", id);
+    if (products && products.length > 0) {
+      throw new Error(
+        `Không thể xóa! Danh mục này có ${products.length} sản phẩm đang sử dụng. Vui lòng chuyển hoặc xóa sản phẩm trước.`
+      );
+    }
+
     const { error } = await supabase.from("Category").delete().eq("id", id);
     if (error) throw new Error(error.message);
     await supabase.from("SystemLog").insert(
@@ -270,6 +292,17 @@ const brandService = {
     return data;
   },
   delete: async (id: string, user: User) => {
+    // Check if brand has products
+    const { data: products } = await supabase
+      .from("Product")
+      .select("id")
+      .eq("brandId", id);
+    if (products && products.length > 0) {
+      throw new Error(
+        `Không thể xóa! Thương hiệu này có ${products.length} sản phẩm đang sử dụng. Vui lòng chuyển hoặc xóa sản phẩm trước.`
+      );
+    }
+
     const { error } = await supabase.from("Brand").delete().eq("id", id);
     if (error) throw new Error(error.message);
     await supabase.from("SystemLog").insert(
@@ -427,6 +460,28 @@ const sizeGuideService = {
     return data;
   },
   delete: async (id: string, user: User) => {
+    // Check if size guide is used by categories
+    const { data: categories } = await supabase
+      .from("Category")
+      .select("id")
+      .eq("sizeGuideId", id);
+    if (categories && categories.length > 0) {
+      throw new Error(
+        `Không thể xóa! Bảng size này đang được sử dụng bởi ${categories.length} danh mục. Vui lòng gỡ liên kết trước.`
+      );
+    }
+
+    // Check if size guide is used by products
+    const { data: products } = await supabase
+      .from("Product")
+      .select("id")
+      .eq("sizeGuideId", id);
+    if (products && products.length > 0) {
+      throw new Error(
+        `Không thể xóa! Bảng size này đang được sử dụng bởi ${products.length} sản phẩm. Vui lòng gỡ liên kết trước.`
+      );
+    }
+
     const { error } = await supabase.from("SizeGuide").delete().eq("id", id);
     if (error) throw new Error(error.message);
     await supabase.from("SystemLog").insert(
@@ -479,6 +534,32 @@ const supplierService = {
       .single();
     if (error) throw new Error(error.message);
     return data;
+  },
+  delete: async (id: string, user: User) => {
+    // Check if supplier has stock entries
+    const { data: stockEntries } = await supabase
+      .from("StockEntry")
+      .select("id")
+      .eq("supplierId", id);
+    if (stockEntries && stockEntries.length > 0) {
+      throw new Error(
+        `Không thể xóa! Nhà cung cấp này có ${stockEntries.length} phiếu nhập kho. Vui lòng xóa phiếu nhập trước.`
+      );
+    }
+
+    const { error } = await supabase.from("Supplier").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await supabase.from("SystemLog").insert(
+      createSystemLog({
+        action: "DELETE",
+        tableName: "Supplier",
+        recordId: id,
+        description: "Xóa nhà cung cấp",
+        actorId: user.id,
+        actorName: user.fullName,
+      })
+    );
+    return true;
   },
 };
 

@@ -358,6 +358,68 @@ export const productService = {
     console.log("✅ [DELETE VARIANT] Success");
   },
 
+  delete: async (productId: string, user: User) => {
+    console.log("🗑️ [DELETE PRODUCT] Starting for:", productId);
+
+    // Check if product has orders
+    const { data: orderItems } = await supabase
+      .from("OrderItem")
+      .select("id")
+      .eq("productId", productId);
+
+    if (orderItems && orderItems.length > 0) {
+      throw new Error(
+        `Không thể xóa! Sản phẩm này có ${orderItems.length} đơn hàng. Chỉ có thể ẩn sản phẩm (đổi trạng thái thành INACTIVE).`
+      );
+    }
+
+    // Delete variants first (CASCADE should handle this, but explicit is safer)
+    const { error: variantsError } = await supabase
+      .from("ProductVariant")
+      .delete()
+      .eq("productId", productId);
+
+    if (variantsError) {
+      console.error("❌ [DELETE PRODUCT] Variants error:", variantsError);
+      throw new Error(`Lỗi xóa variants: ${variantsError.message}`);
+    }
+
+    // Delete reviews (CASCADE should handle this too)
+    const { error: reviewsError } = await supabase
+      .from("Review")
+      .delete()
+      .eq("productId", productId);
+
+    if (reviewsError) {
+      console.error("❌ [DELETE PRODUCT] Reviews error:", reviewsError);
+      // Continue anyway, reviews are optional
+    }
+
+    // Delete product
+    const { error } = await supabase
+      .from("Product")
+      .delete()
+      .eq("id", productId);
+
+    if (error) {
+      console.error("❌ [DELETE PRODUCT] Error:", error);
+      throw new Error(error.message);
+    }
+
+    // Log deletion
+    await supabase.from("SystemLog").insert(
+      createSystemLog({
+        actionType: "DELETE",
+        targetId: productId,
+        description: `Xóa sản phẩm ${productId}`,
+        actorId: user.id,
+        actorName: user.fullName,
+      })
+    );
+
+    console.log("✅ [DELETE PRODUCT] Success");
+  },
+
   getSizeGuide: async (productId: string) => {
     const { data: product } = await supabase
       .from("Product")

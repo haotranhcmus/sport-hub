@@ -430,7 +430,24 @@ async function main() {
       status: "active",
       staffId: "ADMIN-001",
       phone: "0999888777",
-      addresses: [],
+      addresses: [
+        {
+          id: "addr-admin-1",
+          name: "Nguyễn Quản Trị",
+          phone: "0999888777",
+          address: "123 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM",
+          label: "Nhà riêng",
+          isDefault: true,
+        },
+        {
+          id: "addr-admin-2",
+          name: "Nguyễn Quản Trị",
+          phone: "0999888777",
+          address: "456 Trần Hưng Đạo, Phường Cầu Kho, Quận 1, TP.HCM",
+          label: "Văn phòng",
+          isDefault: false,
+        },
+      ],
     },
   });
 
@@ -444,17 +461,44 @@ async function main() {
       phone: "0901234567",
       addresses: [
         {
-          id: "addr-1",
+          id: "addr-cust-1",
           name: "Hội viên SportHub",
           phone: "0901234567",
-          address: "789 CMT8, Quận 10, TP.HCM",
+          address: "456 Nguyễn Huệ, Phường Bến Thành, Quận 1, TP.HCM",
+          label: "Nhà riêng",
           isDefault: true,
+        },
+        {
+          id: "addr-cust-2",
+          name: "Hội viên SportHub",
+          phone: "0901234567",
+          address: "789 Pasteur, Phường Bến Nghé, Quận 1, TP.HCM",
+          label: "Công ty",
+          isDefault: false,
+        },
+        {
+          id: "addr-cust-3",
+          name: "Trần Thị Mai",
+          phone: "0987654321",
+          address: "101 Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP.HCM",
+          label: "Nhà bố mẹ",
+          isDefault: false,
+        },
+        {
+          id: "addr-cust-4",
+          name: "Hội viên SportHub",
+          phone: "0901234567",
+          address: "202 Hai Bà Trưng, Phường Tân Định, Quận 3, TP.HCM",
+          label: "Giao hàng nhanh",
+          isDefault: false,
         },
       ],
     },
   });
 
-  console.log(`✅ Created ${2} users`);
+  console.log(
+    `✅ Created ${2} users (1 admin with 2 addresses, 1 customer with 4 addresses)`
+  );
 
   // ============================================================================
   // 8. Seed Suppliers

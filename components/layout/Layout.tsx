@@ -191,7 +191,7 @@ export const Layout = () => {
                     size={22}
                     className="text-gray-600 group-hover:text-secondary transition-colors"
                   />
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3 hidden">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-secondary"></span>
                   </span>

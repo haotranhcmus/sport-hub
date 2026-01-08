@@ -77,8 +77,18 @@ export const CheckoutPage = () => {
 
   // Requirement 4: Calculate Shipping Fee
   const calculateShipping = () => {
-    const hasFreeShipProduct = items.some((item) => item.product.freeShipping);
-    if (totalPrice > 1000000 || hasFreeShipProduct) return 0;
+    // Free shipping if total > 1 million
+    if (totalPrice > 1000000) return 0;
+
+    // If ALL products have freeShipping flag, then free
+    const allProductsFreeShip = items.every(
+      (item) => item.product.freeShipping
+    );
+    if (allProductsFreeShip && items.length > 0) return 0;
+
+    // Otherwise calculate based on city
+    // Note: Products with freeShipping don't count toward shipping fee,
+    // but if there are non-freeship products, still charge shipping
     switch (formData.city) {
       case "HCM":
         return 20000;
