@@ -62,7 +62,7 @@ model ProductAttribute {
   code        String     @unique
   type        String
   values      Json
-  categoryIds Json?      @default("[]")
+  categoryIds String[]   @default([])
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   categories  Category[] @relation("CategoryToProductAttribute")

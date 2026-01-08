@@ -27,8 +27,25 @@ export const LoginPage = () => {
       }
 
       await login(email, password);
-      console.log("✅ [LOGIN PAGE] Login successful, navigating to home");
-      navigate("/");
+      console.log("✅ [LOGIN PAGE] Login successful");
+
+      // Redirect based on role after successful login
+      // The user is now set in AuthContext, we need to get it from localStorage
+      const storedUser = localStorage.getItem("sporthub_user");
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        console.log("👤 [LOGIN PAGE] User role:", userData.role);
+
+        if (userData.role !== "CUSTOMER") {
+          console.log("🔄 [LOGIN PAGE] Redirecting to admin dashboard");
+          navigate("/admin");
+        } else {
+          console.log("🔄 [LOGIN PAGE] Redirecting to home page");
+          navigate("/");
+        }
+      } else {
+        navigate("/");
+      }
     } catch (e: any) {
       console.error("❌ [LOGIN PAGE] Login error:", e);
       const errorMessage =

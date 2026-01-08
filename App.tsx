@@ -32,13 +32,34 @@ const ProtectedRoute: React.FC<{
   allowGuest?: boolean;
 }> = ({ children, role, allowGuest }) => {
   const { user, isAuthenticated } = useAuth();
+
+  console.log("🛡️ [PROTECTED ROUTE] Auth check:", {
+    isAuthenticated,
+    userRole: user?.role,
+    requiredRole: role,
+    allowGuest,
+    path: window.location.hash,
+  });
+
   if (allowGuest) {
     if (isAuthenticated && user?.role !== "CUSTOMER")
       return <Navigate to="/admin" />;
     return children;
   }
-  if (!isAuthenticated) return <Navigate to="/login" />;
-  if (role && user?.role !== role) return <Navigate to="/" />;
+  if (!isAuthenticated) {
+    console.log("❌ [PROTECTED ROUTE] Not authenticated, redirecting to login");
+    return <Navigate to="/login" />;
+  }
+  if (role && user?.role !== role) {
+    console.log(
+      "❌ [PROTECTED ROUTE] Role mismatch. User role:",
+      user?.role,
+      "Required:",
+      role
+    );
+    return <Navigate to="/" />;
+  }
+  console.log("✅ [PROTECTED ROUTE] Access granted");
   return children;
 };
 
