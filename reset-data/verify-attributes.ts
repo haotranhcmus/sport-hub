@@ -18,7 +18,7 @@ async function verifyAttributes() {
 
   console.log("🔹 VARIANT ATTRIBUTES (Sinh biến thể):");
   console.log(`   Total: ${variantAttrs.length} thuộc tính\n`);
-  
+
   variantAttrs.forEach((attr) => {
     console.log(`   ✅ ${attr.name} (${attr.code})`);
     console.log(`      Type: ${attr.type}`);
@@ -28,7 +28,7 @@ async function verifyAttributes() {
 
   console.log("🔹 SPECIFICATION ATTRIBUTES (Thông tin bổ sung):");
   console.log(`   Total: ${specAttrs.length} thuộc tính\n`);
-  
+
   specAttrs.forEach((attr) => {
     console.log(`   ✅ ${attr.name} (${attr.code})`);
     console.log(`      Type: ${attr.type}`);
@@ -43,14 +43,18 @@ async function verifyAttributes() {
   if (variantAttrs.length === 4) {
     console.log(`✅ Đúng 4 VARIANT attributes (Màu sắc + 3 loại Size)`);
   } else {
-    console.log(`❌ SAI! Cần 4 VARIANT attributes, hiện có ${variantAttrs.length}`);
+    console.log(
+      `❌ SAI! Cần 4 VARIANT attributes, hiện có ${variantAttrs.length}`
+    );
   }
 
   // Kiểm tra có bao nhiêu specification attributes
   if (specAttrs.length === 7) {
     console.log(`✅ Đúng 7 SPECIFICATION attributes`);
   } else {
-    console.log(`❌ SAI! Cần 7 SPECIFICATION attributes, hiện có ${specAttrs.length}`);
+    console.log(
+      `❌ SAI! Cần 7 SPECIFICATION attributes, hiện có ${specAttrs.length}`
+    );
   }
 
   // Kiểm tra không có type khác
