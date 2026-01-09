@@ -51,14 +51,11 @@ npm run db:reset
 
 Tất cả users đều có số điện thoại. Customers có sổ địa chỉ với thông tin đầy đủ.
 
-### Categories (6)
+### Categories (3)
 
-- Bóng Đá
-- Bóng Rổ
-- Chạy Bộ
-- Tennis & Pickleball
-- Cầu Lông
-- Gym & Fitness
+- Bóng Đá (Giày, Áo, Quần)
+- Chạy Bộ (Giày, Áo, Quần)
+- Gym & Fitness (Giày, Áo, Quần)
 
 ### Brands (7)
 
@@ -76,22 +73,35 @@ Tất cả users đều có số điện thoại. Customers có sổ địa ch�
 - Bảng Size Áo (6 sizes: XS-XXL)
 - Bảng Size Quần (6 sizes: XS-XXL)
 
-### Product Attributes (14)
+### Product Attributes (11)
 
-1. **Màu sắc** - 12 màu (Tất cả categories)
-2. **Size giày** - 10 sizes (Bóng Đá, Bóng Rổ, Chạy Bộ, Tennis, Cầu Lông)
-3. **Size áo** - 6 sizes (Tất cả categories)
-4. **Size quần** - 6 sizes (Tất cả categories)
-5. **Chất liệu giày** - 6 loại (Giày categories)
-6. **Chất liệu áo/quần** - 7 loại (Tất cả categories)
-7. **Công nghệ đế** - 7 công nghệ (Giày categories)
-8. **Loại đế bóng đá** - 5 loại (Chỉ Bóng Đá)
-9. **Kiểu cổ giày** - 3 kiểu (Giày categories)
-10. **Giới tính** - 3 loại (Tất cả categories)
-11. **Độ đệm** - 4 mức (Bóng Rổ, Chạy Bộ, Tennis, Cầu Lông)
-12. **Trọng lượng** - 3 mức (Giày categories)
-13. **Kiểu áo** - 6 kiểu (Tất cả categories)
-14. **Kiểu quần** - 5 kiểu (Tất cả categories)
+**Phân loại theo chức năng:**
+
+#### 🔹 VARIANT ATTRIBUTES (Sinh biến thể - 4 thuộc tính):
+
+1. **Màu sắc** - 10 màu (`type: variant`) → Tất cả danh mục
+2. **Size giày** - 10 sizes (`type: variant`) → CHỈ Giày Bóng Đá, Giày Chạy Bộ, Giày Gym
+3. **Size áo** - 6 sizes (`type: variant`) → CHỈ Áo Bóng Đá, Áo Chạy Bộ, Áo Gym
+4. **Size quần** - 6 sizes (`type: variant`) → CHỈ Quần Bóng Đá, Quần Chạy Bộ, Quần Gym
+
+#### 🔹 SPECIFICATION ATTRIBUTES (Thông tin bổ sung - 7 thuộc tính):
+
+5. **Chất liệu giày** - 6 loại (`type: specification`) → CHỈ giày
+6. **Chất liệu vải** - 7 loại (`type: specification`) → CHỈ áo và quần
+7. **Công nghệ đế** - 6 công nghệ (`type: specification`) → CHỈ giày
+8. **Loại đế bóng đá** - 4 loại (`type: specification`) → CHỈ Giày Bóng Đá
+9. **Giới tính** - 3 loại (`type: specification`) → Tất cả danh mục
+10. **Kiểu áo** - 6 kiểu (`type: specification`) → CHỈ áo
+11. **Kiểu quần** - 5 kiểu (`type: specification`) → CHỈ quần
+
+**✅ Đảm bảo:**
+
+- **VARIANT attributes** dùng để sinh SKU/variants (Size × Màu sắc)
+- **SPECIFICATION attributes** chỉ hiển thị thông tin, không sinh variant
+- Giày KHÔNG có Size áo/quần
+- Áo KHÔNG có Size giày/quần
+- Quần KHÔNG có Size giày/áo
+- Mỗi thuộc tính chỉ gán cho danh mục phù hợp
 
 ### Suppliers (5)
 

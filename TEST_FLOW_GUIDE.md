@@ -22,6 +22,61 @@ Tài liệu này mô tả chi tiết thứ tự test các luồng nghiệp vụ 
 
 ## 📊 GIAI ĐOẠN 1: KHỞI TẠO DỮ LIỆU CƠ BẢN (ADMIN)
 
+> **⚡ LƯU Ý:** Dữ liệu cơ bản đã được seed tự động! Bạn có thể bỏ qua Bước 1.2 đến 1.6 và chuyển ngay sang **GIAI ĐOẠN 2: QUẢN LÝ SẢN PHẨM**.
+
+### Bước 1.0: Reset Database về Seed Data
+
+**Mục đích:** Nạp dữ liệu cơ bản đã chuẩn bị sẵn
+
+**Các bước thực hiện:**
+
+```bash
+# Chạy lệnh reset database
+npm run db:reset
+# hoặc
+npx prisma migrate reset --force
+```
+
+**Dữ liệu được tạo tự động:**
+
+✅ **3 danh mục chính** với 9 danh mục con:
+
+- **Bóng Đá:** Giày, Áo, Quần
+- **Chạy Bộ:** Giày, Áo, Quần
+- **Gym & Fitness:** Giày, Áo, Quần
+
+✅ **7 thương hiệu:** Nike, Adidas, Puma, New Balance, Asics, Mizuno, Under Armour
+
+✅ **3 bảng size:** Giày (10 sizes), Áo (6 sizes), Quần (6 sizes)
+
+✅ **11 thuộc tính hợp lý:**
+
+- **Màu sắc** → Tất cả danh mục
+- **Size giày** → CHỈ danh mục giày
+- **Size áo** → CHỈ danh mục áo
+- **Size quần** → CHỈ danh mục quần
+- **Chất liệu giày** → CHỈ giày
+- **Chất liệu vải** → CHỈ áo và quần
+- **Công nghệ đế** → CHỈ giày
+- **Loại đế bóng đá** → CHỈ giày bóng đá
+- **Giới tính** → Tất cả
+- **Kiểu áo** → CHỈ áo
+- **Kiểu quần** → CHỈ quần
+
+✅ **5 nhà cung cấp**
+
+✅ **6 users:** 1 Admin, 3 Customers (có địa chỉ + SĐT), 1 Sales, 1 Warehouse
+
+**Kết quả mong đợi:**
+
+- ✅ Database reset thành công
+- ✅ Không có lỗi gán thuộc tính sai danh mục
+- ✅ Giày KHÔNG có Size áo/quần
+- ✅ Áo KHÔNG có Size giày/quần
+- ✅ Quần KHÔNG có Size giày/áo
+
+---
+
 ### Bước 1.1: Đăng nhập Admin
 
 **Use Case:** UC-C11  
@@ -44,7 +99,16 @@ Tài liệu này mô tả chi tiết thứ tự test các luồng nghiệp vụ 
 
 ---
 
-### Bước 1.2: Tạo Danh Mục Sản Phẩm
+### Bước 1.2 đến 1.6: TẠO DỮ LIỆU THỦ CÔNG (Optional - Đã seed tự động)
+
+> **💡 Bỏ qua các bước này nếu đã chạy `npm run db:reset`**
+
+Nếu bạn muốn tạo thêm dữ liệu hoặc tùy chỉnh, có thể thực hiện các bước sau qua Admin UI:
+
+<details>
+<summary>Click để xem chi tiết các bước tạo thủ công</summary>
+
+### Bước 1.2: Tạo Danh Mục Sản Phẩm (Đã seed)
 
 **Use Case:** UC-A06 (Categories)  
 **Mục đích:** Tạo cấu trúc phân loại sản phẩm
@@ -232,7 +296,7 @@ Tài liệu này mô tả chi tiết thứ tự test các luồng nghiệp vụ 
    **Thông tin cơ bản:**
 
    - Tên: "Giày Adidas Predator Elite FG"
-   - Danh mục: "Giày sân cỏ tự nhiên"
+   - Danh mục: "Giày Bóng Đá"
    - Thương hiệu: "Adidas"
    - Mô tả: Mô tả chi tiết sản phẩm
 
@@ -246,12 +310,18 @@ Tài liệu này mô tả chi tiết thứ tự test các luồng nghiệp vụ 
    - Giá gốc: 3.500.000đ
    - Giá khuyến mãi: 2.990.000đ
 
-   **Thuộc tính:**
+   **Thuộc tính (CHỈ hiển thị thuộc tính phù hợp với Giày Bóng Đá):**
 
-   - Loại đinh: FG
-   - Dòng sản phẩm: Predator Elite
+   - Màu sắc: Đen
+   - Size giày: 40, 41, 42, 43
+   - Chất liệu giày: Da tổng hợp
+   - Công nghệ đế: Adidas Boost
+   - Loại đế bóng đá: FG (Sân cỏ tự nhiên)
+   - Giới tính: Nam
 
-   **Bảng size:** Chọn "Bảng size giày Adidas"
+   > **✅ KIỂM TRA QUAN TRỌNG:** Danh mục "Giày Bóng Đá" KHÔNG hiển thị Size áo, Size quần, Kiểu áo, Kiểu quần
+
+   **Bảng size:** Chọn "Bảng Size Giày"
 
    **Tùy chọn:**
 
@@ -260,15 +330,63 @@ Tài liệu này mô tả chi tiết thứ tự test các luồng nghiệp vụ 
 
    **Tạo Variants:**
 
-   - Size 39 + Màu Đen: Giá điều chỉnh 0đ, Tồn kho 10
-   - Size 39 + Màu Trắng: Giá điều chỉnh 0đ, Tồn kho 8
-   - Size 40 + Màu Đen: Giá điều chỉnh 0đ, Tồn kho 15
-   - Size 40 + Màu Trắng: Giá điều chỉnh 0đ, Tồn kho 12
-   - Size 41 + Màu Đen: Giá điều chỉnh 100.000đ, Tồn kho 10
-   - (Tạo thêm các size 42, 43...)
+   - Size 40 + Màu Đen: Giá điều chỉnh 0đ, Tồn kho 10
+   - Size 41 + Màu Đen: Giá điều chỉnh 0đ, Tồn kho 15
+   - Size 42 + Màu Trắng: Giá điều chỉnh 50.000đ, Tồn kho 12
+   - Size 43 + Màu Trắng: Giá điều chỉnh 50.000đ, Tồn kho 8
 
 4. Click "Lưu sản phẩm"
-5. Lặp lại để tạo thêm 5-10 sản phẩm khác nhau
+5. **Tạo thêm sản phẩm áo để test:**
+   - Tên: "Áo Bóng Đá Nike Dri-FIT"
+   - Danh mục: "Áo Bóng Đá"
+   - Thuộc tính CHỈ hiển thị: Màu sắc, Size áo, Chất liệu vải, Giới tính, Kiểu áo
+   - **KHÔNG hiển thị:** Size giày, Size quần, Chất liệu giày, Công nghệ đế, Loại đế bóng đá
+6. Lặp lại để tạo thêm 5-10 sản phẩm khác nhau
+
+   - Mô tả: Mô tả chi tiết sản phẩm
+
+   **Hình ảnh:**
+
+   - Thumbnail: Upload ảnh chính
+   - Gallery: Upload 3-5 ảnh
+
+   **Giá:**
+
+   - Giá gốc: 3.500.000đ
+   - Giá khuyến mãi: 2.990.000đ
+
+   **Thuộc tính (CHỈ hiển thị thuộc tính phù hợp với Giày Bóng Đá):**
+
+   - Màu sắc: Đen
+   - Size giày: 40, 41, 42, 43
+   - Chất liệu giày: Da tổng hợp
+   - Công nghệ đế: Adidas Boost
+   - Loại đế bóng đá: FG (Sân cỏ tự nhiên)
+   - Giới tính: Nam
+
+   > **✅ KIỂM TRA QUAN TRỌNG:** Danh mục "Giày Bóng Đá" KHÔNG hiển thị Size áo, Size quần, Kiểu áo, Kiểu quần
+
+   **Bảng size:** Chọn "Bảng Size Giày"
+
+   **Tùy chọn:**
+
+   - ✅ Miễn phí ship
+   - ✅ Cho phép đổi/trả
+
+   **Tạo Variants:**
+
+   - Size 40 + Màu Đen: Giá điều chỉnh 0đ, Tồn kho 10
+   - Size 41 + Màu Đen: Giá điều chỉnh 0đ, Tồn kho 15
+   - Size 42 + Màu Trắng: Giá điều chỉnh 50.000đ, Tồn kho 12
+   - Size 43 + Màu Trắng: Giá điều chỉnh 50.000đ, Tồn kho 8
+
+7. Click "Lưu sản phẩm"
+8. **Tạo thêm sản phẩm áo để test:**
+   - Tên: "Áo Bóng Đá Nike Dri-FIT"
+   - Danh mục: "Áo Bóng Đá"
+   - Thuộc tính CHỈ hiển thị: Màu sắc, Size áo, Chất liệu vải, Giới tính, Kiểu áo
+   - **KHÔNG hiển thị:** Size giày, Size quần, Chất liệu giày, Công nghệ đế, Loại đế bóng đá
+9. Lặp lại để tạo thêm 5-10 sản phẩm khác nhau
 
 **Kết quả mong đợi:**
 
@@ -1077,11 +1195,13 @@ Tài liệu này mô tả chi tiết thứ tự test các luồng nghiệp vụ 
 
 ### Dữ liệu cơ bản
 
-- [ ] Tạo ít nhất 3 danh mục cha, mỗi danh mục 2-3 con
-- [ ] Tạo ít nhất 5 thương hiệu
-- [ ] Tạo ít nhất 5 thuộc tính sản phẩm
-- [ ] Tạo ít nhất 2 bảng size
-- [ ] Tạo ít nhất 3 nhà cung cấp
+- [ ] **Reset database về seed data** (`npm run db:reset`)
+- [ ] ✅ 3 danh mục cha, mỗi danh mục có 3 con (Giày, Áo, Quần)
+- [ ] ✅ 7 thương hiệu
+- [ ] ✅ 3 bảng size
+- [ ] ✅ 11 thuộc tính được gán ĐÚNG danh mục
+- [ ] ✅ 5 nhà cung cấp
+- [ ] ✅ 6 users (1 admin, 3 customers, 1 sales, 1 warehouse)
 
 ### Sản phẩm
 
