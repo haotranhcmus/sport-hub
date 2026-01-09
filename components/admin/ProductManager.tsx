@@ -313,6 +313,12 @@ const ProductForm = ({
     );
   }, [categoryAttributes]);
 
+  const specificationAttributes = useMemo(() => {
+    return categoryAttributes.filter(
+      (a: ProductAttribute) => a.type === "specification"
+    );
+  }, [categoryAttributes]);
+
   const handleMainImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -711,51 +717,49 @@ const ProductForm = ({
                 tính kỹ thuật
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {categoryAttributes
-                  .filter((a) => a.type === "info")
-                  .map((attr) => (
-                    <div key={attr.id} className="space-y-2">
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        {attr.name}
-                      </label>
-                      {attr.values.length > 0 ? (
-                        <select
-                          className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-secondary/10"
-                          value={(formData.attributes as any)[attr.code] || ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              attributes: {
-                                ...formData.attributes,
-                                [attr.code]: e.target.value,
-                              },
-                            })
-                          }
-                        >
-                          <option value="">-- Chọn {attr.name} --</option>
-                          {attr.values.map((v) => (
-                            <option key={v} value={v}>
-                              {v}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-secondary/10"
-                          value={(formData.attributes as any)[attr.code] || ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              attributes: {
-                                ...formData.attributes,
-                                [attr.code]: e.target.value,
-                              },
-                            })
-                          }
-                        />
-                      )}
-                    </div>
-                  ))}
+                {specificationAttributes.map((attr) => (
+                  <div key={attr.id} className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      {attr.name}
+                    </label>
+                    {attr.values.length > 0 ? (
+                      <select
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-secondary/10"
+                        value={(formData.attributes as any)[attr.code] || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            attributes: {
+                              ...formData.attributes,
+                              [attr.code]: e.target.value,
+                            },
+                          })
+                        }
+                      >
+                        <option value="">-- Chọn {attr.name} --</option>
+                        {attr.values.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-secondary/10"
+                        value={(formData.attributes as any)[attr.code] || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            attributes: {
+                              ...formData.attributes,
+                              [attr.code]: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
