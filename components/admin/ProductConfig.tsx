@@ -21,6 +21,7 @@ import {
   Camera,
   LayoutTemplate,
   Info as InfoIcon,
+  Info,
   AlertTriangle,
   AlertOctagon,
   Ruler,
@@ -544,12 +545,41 @@ export const ProductConfigManager = () => {
   const handleAddPredefinedValue = () => {
     const val = newValueInput.trim();
     if (!val) return;
-    if (formData.values.includes(val)) {
-      alert("Giá trị này đã tồn tại.");
-      return;
+
+    // Hỗ trợ bulk add: Tách theo dấu phẩy hoặc xuống dòng
+    const values = val
+      .split(/[,\n]/)
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
+
+    const newValues: string[] = [];
+    const duplicates: string[] = [];
+
+    values.forEach((v) => {
+      // Kiểm tra trùng lặp (case-insensitive)
+      const exists = formData.values.some(
+        (existing) => existing.toLowerCase() === v.toLowerCase()
+      );
+      if (exists) {
+        duplicates.push(v);
+      } else {
+        newValues.push(v);
+      }
+    });
+
+    if (duplicates.length > 0) {
+      alert(
+        `⚠️ Giá trị sau đã tồn tại và sẽ bỏ qua:\n${duplicates.join(", ")}`
+      );
     }
-    setFormData((prev) => ({ ...prev, values: [...prev.values, val] }));
-    setNewValueInput("");
+
+    if (newValues.length > 0) {
+      setFormData({ ...formData, values: [...formData.values, ...newValues] });
+      setNewValueInput("");
+    } else if (duplicates.length > 0) {
+      // Nếu tất cả đều trùng thì xóa input
+      setNewValueInput("");
+    }
   };
 
   const filteredItems = useMemo(() => {
@@ -1033,62 +1063,149 @@ export const ProductConfigManager = () => {
                   {/* ATTRIBUTE VALUES LIST */}
                   {activeTab === "attribute" && (
                     <div className="space-y-3">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        Danh sách giá trị {formData.type === "variant" && "*"}
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Ví dụ: Đỏ, 40, XL..."
-                          className="flex-1 border border-gray-100 bg-gray-50 rounded-2xl px-5 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-secondary/10"
-                          value={newValueInput}
-                          onChange={(e) => setNewValueInput(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddPredefinedValue();
-                            }
-                          }}
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Danh sách giá trị {formData.type === "variant" && "*"}
+                          {formData.values.length > 0 && (
+                            <span className="ml-2 px-2 py-0.5 bg-secondary/10 text-secondary rounded-lg text-[9px]">
+                              {formData.values.length} giá trị
+                            </span>
+                          )}
+                        </label>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 flex items-start gap-3">
+                        <Info
+                          size={16}
+                          className="text-blue-500 flex-shrink-0 mt-0.5"
                         />
+                        <div className="text-[10px] text-blue-700 font-bold">
+                          <p className="font-black uppercase mb-1">
+                            💡 Hướng dẫn nâng cao:
+                          </p>
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>
+                              Nhập <span className="font-black">1 giá trị</span>{" "}
+                              và nhấn <span className="font-black">Enter</span>{" "}
+                              hoặc nút{" "}
+                              <span className="font-black">+ THÊM</span>
+                            </li>
+                            <li>
+                              Nhập{" "}
+                              <span className="font-black">nhiều giá trị</span>{" "}
+                              cách nhau bằng{" "}
+                              <span className="font-black">dấu phẩy (,)</span>{" "}
+                              để thêm hàng loạt
+                            </li>
+                            <li>
+                              VD:{" "}
+                              <code className="bg-white px-1 rounded">
+                                Cotton, Polyester, Spandex
+                              </code>{" "}
+                              → Tạo 3 giá trị cùng lúc
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            placeholder="VD: Đỏ  HOẶC  Cotton, Polyester, Spandex"
+                            className="w-full border border-gray-100 bg-white rounded-2xl px-5 py-3 font-bold text-sm outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition"
+                            value={newValueInput}
+                            onChange={(e) => setNewValueInput(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddPredefinedValue();
+                              }
+                            }}
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={handleAddPredefinedValue}
-                          className="px-6 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase hover:bg-blue-700 transition"
+                          disabled={!newValueInput.trim()}
+                          className="px-6 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-secondary/20"
                         >
                           <Plus size={16} />
+                          Thêm
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 min-h-[60px]">
-                        {formData.values.length > 0 ? (
-                          formData.values.map((val, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-sm border border-gray-100 animate-in zoom-in-50"
-                            >
-                              {val}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setFormData({
-                                    ...formData,
-                                    values: formData.values.filter(
-                                      (_, i) => i !== idx
-                                    ),
-                                  })
+
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black text-gray-400 uppercase">
+                              Các giá trị đã thêm
+                            </span>
+                            {formData.values.length > 0 && (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-bold">
+                                {formData.values.length}
+                              </span>
+                            )}
+                          </div>
+                          {formData.values.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `⚠️ Bạn chắc chắn muốn xóa tất cả ${formData.values.length} giá trị?\n\nHành động này không thể hoàn tác!`
+                                  )
+                                ) {
+                                  setFormData({ ...formData, values: [] });
                                 }
-                                className="text-gray-400 hover:text-red-500 transition"
+                              }}
+                              className="text-[9px] font-black uppercase text-red-500 hover:text-white hover:bg-red-500 px-3 py-1.5 rounded-lg transition flex items-center gap-1 border border-red-200 hover:border-red-500"
+                              title="Xóa tất cả giá trị"
+                            >
+                              <X size={12} />
+                              Xóa tất cả
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 p-5 bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-gray-200 min-h-[100px]">
+                          {formData.values.length > 0 ? (
+                            formData.values.map((val, idx) => (
+                              <div
+                                key={idx}
+                                className="group flex items-center gap-2 bg-white px-4 py-2 rounded-xl text-[11px] font-black uppercase shadow-sm border-2 border-gray-200 hover:border-secondary hover:shadow-md transition-all animate-in zoom-in-50"
                               >
-                                <X size={12} />
-                              </button>
+                                <span className="text-gray-700">{val}</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData({
+                                      ...formData,
+                                      values: formData.values.filter(
+                                        (_, i) => i !== idx
+                                      ),
+                                    })
+                                  }
+                                  className="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-red-50 rounded"
+                                  title="Xóa giá trị này"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="w-full text-center py-8">
+                              <AlertTriangle
+                                size={32}
+                                className="text-gray-300 mx-auto mb-2"
+                              />
+                              <p className="text-[11px] text-gray-400 font-black uppercase">
+                                {formData.type === "variant"
+                                  ? "⚠️ Chưa có giá trị nào. Thêm ít nhất 1 giá trị để sinh biến thể!"
+                                  : "Danh sách trống. Người dùng có thể nhập tự do khi tạo sản phẩm."}
+                              </p>
                             </div>
-                          ))
-                        ) : (
-                          <p className="text-[10px] text-gray-300 font-bold uppercase py-2">
-                            {formData.type === "variant"
-                              ? "Chưa có giá trị. Thêm ít nhất 1 giá trị để sinh biến thể."
-                              : "Không có giá trị định sẵn. Người dùng có thể nhập tự do."}
-                          </p>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

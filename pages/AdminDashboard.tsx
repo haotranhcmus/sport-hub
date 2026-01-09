@@ -18,11 +18,20 @@ import {
   Menu,
   Ruler,
   RotateCcw,
+  Store,
+  Box,
+  BarChart3,
+  Cog,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 // Import Separated Components
-import { SidebarItem } from "../components/admin/SharedUI";
+import {
+  SidebarItem,
+  SidebarSubItem,
+  SidebarModule,
+  Breadcrumb,
+} from "../components/admin/SharedUI";
 import { DashboardView } from "../components/admin/DashboardHome";
 import { OrderListManager } from "../components/admin/OrderManager";
 import { ProductConfigManager } from "../components/admin/ProductConfig";
@@ -42,6 +51,28 @@ import {
 } from "../components/admin/SystemAdmin";
 import { SizeGuideManager } from "../components/admin/SizeGuideManager";
 import { ReturnManager } from "../components/admin/ReturnManager";
+
+// Helper function để lấy breadcrumb path
+const getBreadcrumb = (view: ViewType): string[] => {
+  const breadcrumbMap: Record<ViewType, string[]> = {
+    dashboard: ["Tổng quan"],
+    sales: ["Kinh doanh", "Đơn hàng"],
+    returns: ["Kinh doanh", "Đổi / Trả"],
+    reports: ["Báo cáo", "Doanh thu"],
+    products: ["Sản phẩm", "Sản phẩm & SKU"],
+    size_guides: ["Sản phẩm", "Bảng Size"],
+    product_config: ["Sản phẩm", "Cấu hình sản phẩm"],
+    inventory: ["Quản lý kho", "Nhập kho"],
+    stock_issue: ["Quản lý kho", "Xuất kho"],
+    stock_count: ["Quản lý kho", "Kiểm kê"],
+    inventory_report: ["Quản lý kho", "Báo cáo tồn kho"],
+    suppliers: ["Quản lý kho", "Nhà cung cấp"],
+    system_config: ["Cấu hình", "Website"],
+    system: ["Cấu hình", "Nhân viên"],
+    audit_logs: ["Cấu hình", "Nhật ký"],
+  };
+  return breadcrumbMap[view] || [view];
+};
 
 // ================= TYPES =================
 type ViewType =
@@ -113,6 +144,7 @@ export const AdminDashboard = () => {
             </button>
           </div>
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+            {/* MODULE 1: Tổng quan */}
             <SidebarItem
               icon={<LayoutDashboard size={18} />}
               label="Tổng quan"
@@ -123,143 +155,188 @@ export const AdminDashboard = () => {
               }}
             />
 
-            <div className="pt-4 pb-1 pl-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Kinh doanh
-            </div>
-            <SidebarItem
-              icon={<ShoppingCart size={18} />}
-              label="Đơn hàng"
-              active={activeView === "sales"}
-              onClick={() => {
-                setActiveView("sales");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<RotateCcw size={18} />}
-              label="Quản lý Đổi/Trả"
-              active={activeView === "returns"}
-              onClick={() => {
-                setActiveView("returns");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<TrendingUp size={18} />}
-              label="Báo cáo doanh thu"
-              active={activeView === "reports"}
-              onClick={() => {
-                setActiveView("reports");
-                setIsSidebarOpen(false);
-              }}
-            />
+            {/* MODULE 2: Kinh doanh */}
+            <div className="pt-4"></div>
+            <SidebarModule
+              icon={<Store size={18} />}
+              label="Kinh doanh"
+              defaultExpanded={["sales", "returns", "reports"].includes(
+                activeView
+              )}
+            >
+              <SidebarSubItem
+                icon={<ShoppingCart size={16} />}
+                label="Đơn hàng"
+                active={activeView === "sales"}
+                onClick={() => {
+                  setActiveView("sales");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<RotateCcw size={16} />}
+                label="Đổi / Trả"
+                active={activeView === "returns"}
+                onClick={() => {
+                  setActiveView("returns");
+                  setIsSidebarOpen(false);
+                }}
+              />
+            </SidebarModule>
 
-            <div className="pt-4 pb-1 pl-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Hàng hóa & Kho
-            </div>
-            <SidebarItem
-              icon={<Package size={18} />}
-              label="Sản phẩm & SKU"
-              active={activeView === "products"}
-              onClick={() => {
-                setActiveView("products");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<Ruler size={18} />}
-              label="Bảng Size"
-              active={activeView === "size_guides"}
-              onClick={() => {
-                setActiveView("size_guides");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<Settings size={18} />}
-              label="Phân loại / Hiệu"
-              active={activeView === "product_config"}
-              onClick={() => {
-                setActiveView("product_config");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<Briefcase size={18} />}
-              label="Nhà cung cấp"
-              active={activeView === "suppliers"}
-              onClick={() => {
-                setActiveView("suppliers");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<ArrowUpCircle size={18} />}
-              label="Nhập kho"
-              active={activeView === "inventory"}
-              onClick={() => {
-                setActiveView("inventory");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<PackageOpen size={18} />}
-              label="Xuất kho"
-              active={activeView === "stock_issue"}
-              onClick={() => {
-                setActiveView("stock_issue");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<ClipboardList size={18} />}
-              label="Kiểm kê"
-              active={activeView === "stock_count"}
-              onClick={() => {
-                setActiveView("stock_count");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
+            {/* MODULE 3: Sản phẩm */}
+            <SidebarModule
+              icon={<Box size={18} />}
+              label="Sản phẩm"
+              defaultExpanded={[
+                "products",
+                "size_guides",
+                "product_config",
+              ].includes(activeView)}
+            >
+              <SidebarSubItem
+                icon={<Package size={16} />}
+                label="Sản phẩm & SKU"
+                active={activeView === "products"}
+                onClick={() => {
+                  setActiveView("products");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<Ruler size={16} />}
+                label="Bảng Size"
+                active={activeView === "size_guides"}
+                onClick={() => {
+                  setActiveView("size_guides");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<Settings size={16} />}
+                label="Cấu hình sản phẩm"
+                active={activeView === "product_config"}
+                onClick={() => {
+                  setActiveView("product_config");
+                  setIsSidebarOpen(false);
+                }}
+              />
+            </SidebarModule>
+
+            {/* MODULE 4: Quản lý kho */}
+            <SidebarModule
               icon={<Warehouse size={18} />}
-              label="Báo cáo tồn kho"
-              active={activeView === "inventory_report"}
-              onClick={() => {
-                setActiveView("inventory_report");
-                setIsSidebarOpen(false);
-              }}
-            />
+              label="Quản lý kho"
+              defaultExpanded={[
+                "inventory",
+                "stock_issue",
+                "stock_count",
+                "inventory_report",
+                "suppliers",
+              ].includes(activeView)}
+            >
+              <SidebarSubItem
+                icon={<ArrowUpCircle size={16} />}
+                label="Nhập kho"
+                active={activeView === "inventory"}
+                onClick={() => {
+                  setActiveView("inventory");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<PackageOpen size={16} />}
+                label="Xuất kho"
+                active={activeView === "stock_issue"}
+                onClick={() => {
+                  setActiveView("stock_issue");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<ClipboardList size={16} />}
+                label="Kiểm kê"
+                active={activeView === "stock_count"}
+                onClick={() => {
+                  setActiveView("stock_count");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<BarChart3 size={16} />}
+                label="Báo cáo tồn kho"
+                active={activeView === "inventory_report"}
+                onClick={() => {
+                  setActiveView("inventory_report");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<Briefcase size={16} />}
+                label="Nhà cung cấp"
+                active={activeView === "suppliers"}
+                onClick={() => {
+                  setActiveView("suppliers");
+                  setIsSidebarOpen(false);
+                }}
+              />
+            </SidebarModule>
 
-            <div className="pt-4 pb-1 pl-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Cấu hình
-            </div>
-            <SidebarItem
-              icon={<Wrench size={18} />}
-              label="Cấu hình Website"
-              active={activeView === "system_config"}
-              onClick={() => {
-                setActiveView("system_config");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<ShieldAlert size={18} />}
-              label="Nhật ký hệ thống"
-              active={activeView === "audit_logs"}
-              onClick={() => {
-                setActiveView("audit_logs");
-                setIsSidebarOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<Users size={18} />}
-              label="Nhân viên"
-              active={activeView === "system"}
-              onClick={() => {
-                setActiveView("system");
-                setIsSidebarOpen(false);
-              }}
-            />
+            {/* MODULE 5: Báo cáo */}
+            <SidebarModule
+              icon={<TrendingUp size={18} />}
+              label="Báo cáo"
+              defaultExpanded={activeView === "reports"}
+            >
+              <SidebarSubItem
+                icon={<BarChart3 size={16} />}
+                label="Doanh thu"
+                active={activeView === "reports"}
+                onClick={() => {
+                  setActiveView("reports");
+                  setIsSidebarOpen(false);
+                }}
+              />
+            </SidebarModule>
+
+            {/* MODULE 6: Cấu hình hệ thống */}
+            <SidebarModule
+              icon={<Cog size={18} />}
+              label="Cấu hình"
+              defaultExpanded={[
+                "system_config",
+                "audit_logs",
+                "system",
+              ].includes(activeView)}
+            >
+              <SidebarSubItem
+                icon={<Wrench size={16} />}
+                label="Website"
+                active={activeView === "system_config"}
+                onClick={() => {
+                  setActiveView("system_config");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<Users size={16} />}
+                label="Nhân viên"
+                active={activeView === "system"}
+                onClick={() => {
+                  setActiveView("system");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<ShieldAlert size={16} />}
+                label="Nhật ký"
+                active={activeView === "audit_logs"}
+                onClick={() => {
+                  setActiveView("audit_logs");
+                  setIsSidebarOpen(false);
+                }}
+              />
+            </SidebarModule>
           </nav>
           <div className="p-4 border-t border-gray-200">
             <button
@@ -279,6 +356,11 @@ export const AdminDashboard = () => {
           >
             <Menu size={20} />
           </button>
+
+          {/* Breadcrumb - hiển thị ở mọi trang */}
+          <div className="px-6 md:px-8 pt-6">
+            <Breadcrumb items={getBreadcrumb(activeView)} />
+          </div>
 
           {activeView === "dashboard" && (
             <ErrorBoundary view="Dashboard">

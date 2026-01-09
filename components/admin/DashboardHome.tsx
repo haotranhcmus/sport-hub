@@ -23,7 +23,7 @@ export const DashboardView = () => {
     { name: "CN", doanhThu: 3490 },
   ];
   return (
-    <div className="space-y-8 animate-in fade-in p-6 md:p-8 w-full">
+    <div className="space-y-8 animate-in fade-in px-6 md:px-8 pb-8 w-full">
       <h1 className="text-2xl font-bold text-gray-800 hidden md:block uppercase tracking-tight">
         Tổng quan Dashboard
       </h1>
