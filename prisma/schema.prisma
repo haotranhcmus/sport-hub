@@ -86,6 +86,8 @@ model Product {
   categoryId       String
   brandId          String
   totalSold        Int              @default(0)
+  reviewCount      Int              @default(0)      // Cache review count
+  averageRating    Float            @default(0)      // Cache average rating
   allowReturn      Boolean          @default(true)
   returnPeriod     Int              @default(7)
   freeShipping     Boolean          @default(false)
@@ -107,6 +109,8 @@ model Product {
   @@index([categoryId])
   @@index([brandId])
   @@index([sizeGuideId])
+  @@index([reviewCount])
+  @@index([averageRating])
 }
 
 model ProductVariant {
@@ -198,6 +202,7 @@ model Order {
   @@index([paymentStatus])
   @@index([customerPhone])
   @@index([createdAt])
+  @@index([userId, status, createdAt]) // Composite index for common query pattern
 }
 
 model OrderItem {
@@ -208,6 +213,7 @@ model OrderItem {
   productName    String
   quantity       Int
   unitPrice      Float
+  shippingFee    Float            @default(0) // Phí ship cho item này
   color          String?
   size           String?
   thumbnailUrl   String?
@@ -315,6 +321,7 @@ model StockIssue {
   @@index([date])
   @@index([status])
   @@index([type])
+  @@index([actorName]) // For search by actor
 }
 
 model Stocktake {

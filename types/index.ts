@@ -111,6 +111,8 @@ export interface Product {
   brand?: Brand;
   variants: ProductVariant[];
   totalSold: number;
+  reviewCount: number; // ✅ NEW: Cached review count
+  averageRating: number; // ✅ NEW: Cached average rating
   allowReturn?: boolean;
   returnPeriod?: number;
   freeShipping?: boolean;
@@ -152,6 +154,7 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   unitPrice: number;
+  shippingFee?: number; // Phí ship cho item này
   thumbnailUrl?: string;
   color?: string;
   size?: string;

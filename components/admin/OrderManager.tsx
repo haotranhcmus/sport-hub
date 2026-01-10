@@ -16,17 +16,30 @@ import {
   XCircle,
   AlertTriangle,
   RotateCcw,
+  Bell,
 } from "lucide-react";
 import { api } from "../../services";
 import { AdminOrderDetailModal } from "./AdminOrderDetailModal";
 import { getOrderStatusLabel } from "../../utils/helpers";
 import { useOrders } from "../../hooks/useOrdersQuery";
+import {
+  subscribeToOrders,
+  unsubscribeFromOrders,
+  OrderRealtimeEvent,
+} from "../../lib/realtime";
+import { ToastNotification, useToast } from "../common/ToastNotification";
 
 type StatusGroup = "all" | "new" | "processing" | "finished" | "support";
 
 export const OrderListManager = () => {
   // Use TanStack Query for orders
   const { data: orders = [], isLoading: loading, refetch } = useOrders();
+
+  // Toast notifications
+  const { toasts, removeToast, success, info } = useToast();
+
+  // New orders badge
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,6 +55,56 @@ export const OrderListManager = () => {
   const [customerFilter, setCustomerFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Setup Realtime subscription for new orders
+  useEffect(() => {
+    console.log("📡 [ADMIN] Setting up realtime subscription...");
+
+    const handleOrderChange = (event: OrderRealtimeEvent) => {
+      if (event.type === "INSERT") {
+        // New order created
+        const newOrder = event.new;
+        console.log("🔔 [ADMIN] New order received:", newOrder.orderCode);
+
+        // Show toast notification
+        success(
+          `Đơn hàng mới: ${newOrder.orderCode} - ${newOrder.customerName}`,
+          7000
+        );
+
+        // Increment badge counter
+        setNewOrdersCount((prev) => prev + 1);
+
+        // Refetch orders to update list
+        refetch();
+      } else if (event.type === "UPDATE") {
+        // Order updated
+        const updatedOrder = event.new;
+        console.log("🔄 [ADMIN] Order updated:", updatedOrder.orderCode);
+
+        info(`Đơn hàng ${updatedOrder.orderCode} đã cập nhật`, 5000);
+
+        // Refetch to show updated data
+        refetch();
+      }
+    };
+
+    // Subscribe to order changes
+    const channel = subscribeToOrders(handleOrderChange);
+
+    // Cleanup on unmount
+    return () => {
+      console.log("🔕 [ADMIN] Cleaning up realtime subscription...");
+      unsubscribeFromOrders();
+    };
+  }, [refetch, success, info]);
+
+  // Reset badge when user views orders
+  useEffect(() => {
+    if (activeTab === "new") {
+      setNewOrdersCount(0);
+    }
+  }, [activeTab]);
 
   // No need for manual fetchOrders - TanStack Query handles it
 
@@ -227,6 +290,9 @@ export const OrderListManager = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in pb-10 p-6 md:p-8 w-full">
+      {/* Toast Notifications */}
+      <ToastNotification toasts={toasts} onRemove={removeToast} />
+
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
           <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">
@@ -257,6 +323,7 @@ export const OrderListManager = () => {
                 ].includes(o.status)
               ).length
             }
+            badge={newOrdersCount > 0 ? newOrdersCount : undefined}
           />
           <StatusTab
             active={activeTab === "processing"}
@@ -500,7 +567,14 @@ export const OrderListManager = () => {
   );
 };
 
-const StatusTab = ({ active, onClick, label, count, color = "slate" }: any) => {
+const StatusTab = ({
+  active,
+  onClick,
+  label,
+  count,
+  color = "slate",
+  badge,
+}: any) => {
   const colors: any = {
     slate: active
       ? "bg-slate-900 text-white"
@@ -518,7 +592,7 @@ const StatusTab = ({ active, onClick, label, count, color = "slate" }: any) => {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 px-6 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 ${colors[color]}`}
+      className={`relative flex items-center gap-3 px-6 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 ${colors[color]}`}
     >
       {label}{" "}
       {count > 0 && (
@@ -528,6 +602,15 @@ const StatusTab = ({ active, onClick, label, count, color = "slate" }: any) => {
           }`}
         >
           {count}
+        </span>
+      )}
+      {/* Badge for new orders */}
+      {badge && badge > 0 && (
+        <span className="absolute -top-1 -right-1 flex h-5 w-5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-[8px] font-black items-center justify-center">
+            {badge}
+          </span>
         </span>
       )}
     </button>

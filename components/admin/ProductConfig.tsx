@@ -543,7 +543,8 @@ export const ProductConfigManager = () => {
       if (editingItem && oldUrl) {
         imageUrl = await replaceImage(oldUrl, file, folder);
       } else {
-        imageUrl = await uploadImage(file, folder);
+        const result = await uploadImage(file, folder);
+        imageUrl = result.url;
       }
 
       if (activeTab === "brand") {

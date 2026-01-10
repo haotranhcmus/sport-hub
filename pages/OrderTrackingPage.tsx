@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Package,
@@ -16,6 +16,15 @@ import { api } from "../services";
 import { Order, OrderStatus } from "../types";
 import { useNavigate } from "react-router-dom";
 import { getOrderStatusLabel } from "../utils/helpers";
+import {
+  subscribeToOrderById,
+  unsubscribeFromOrderById,
+  OrderRealtimeEvent,
+} from "../lib/realtime";
+import {
+  ToastNotification,
+  useToast,
+} from "../components/common/ToastNotification";
 
 export const OrderTrackingPage = () => {
   const navigate = useNavigate();
@@ -24,6 +33,43 @@ export const OrderTrackingPage = () => {
   const [result, setResult] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Toast notifications
+  const { toasts, removeToast, info, success } = useToast();
+
+  // Setup realtime subscription when order is found
+  useEffect(() => {
+    if (!result?.id) return;
+
+    console.log(
+      "📡 [TRACKING] Setting up realtime for order:",
+      result.orderCode
+    );
+
+    const handleOrderUpdate = (event: OrderRealtimeEvent) => {
+      if (event.type === "UPDATE") {
+        const updatedOrder = event.new;
+        console.log("🔄 [TRACKING] Order updated:", updatedOrder);
+
+        // Show notification for status change
+        if (updatedOrder.status !== result.status) {
+          const oldStatus = getOrderStatusLabel(result.status);
+          const newStatus = getOrderStatusLabel(updatedOrder.status);
+          success(`Đơn hàng chuyển từ "${oldStatus}" → "${newStatus}"`, 7000);
+        }
+
+        // Update order in UI
+        setResult(updatedOrder);
+      }
+    };
+
+    const channel = subscribeToOrderById(result.id, handleOrderUpdate);
+
+    return () => {
+      console.log("🔕 [TRACKING] Cleaning up realtime subscription...");
+      unsubscribeFromOrderById(channel);
+    };
+  }, [result?.id, success]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +124,9 @@ export const OrderTrackingPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 animate-in fade-in duration-500">
+      {/* Toast Notifications */}
+      <ToastNotification toasts={toasts} onRemove={removeToast} />
+
       <div className="text-center mb-12">
         <h1 className="text-4xl font-black text-gray-800 uppercase tracking-tight mb-3">
           Tra cứu đơn hàng

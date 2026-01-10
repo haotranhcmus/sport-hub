@@ -7,22 +7,39 @@ import { createSystemLog, delay } from "./shared.service";
 export const productService = {
   list: async (): Promise<Product[]> => {
     try {
+      // ✅ OPTIMIZED: Only select needed fields to reduce data transfer
       const { data, error } = await supabase
         .from("Product")
         .select(
           `
-          *,
-          category:Category(*),
-          brand:Brand(*),
-          variants:ProductVariant(*),
-          reviews:Review(*)
+          id,
+          productCode,
+          name,
+          slug,
+          description,
+          basePrice,
+          promotionalPrice,
+          thumbnailUrl,
+          status,
+          categoryId,
+          brandId,
+          totalSold,
+          reviewCount,
+          averageRating,
+          allowReturn,
+          freeShipping,
+          attributes,
+          createdAt,
+          category:Category(id, name, slug),
+          brand:Brand(id, name, slug),
+          variants:ProductVariant(id, sku, color, size, stockQuantity, status)
         `
         )
+        .eq("status", "ACTIVE") // ✅ Filter at database level
         .order("createdAt", { ascending: false });
 
       if (error) {
         console.error("❌ Error fetching products:", error);
-        // Return empty array instead of throwing
         return [];
       }
       return data || [];
@@ -239,7 +256,12 @@ export const productService = {
       returnPeriod: productData.returnPeriod || 7,
       freeShipping: productData.freeShipping || false,
       attributes: productData.attributes || {},
-      sizeGuideId: productData.sizeGuideId || null,
+      // ✅ FIX: Only set sizeGuideId if it's a valid non-empty string
+      // Prevent foreign key constraint violation
+      sizeGuideId:
+        productData.sizeGuideId && productData.sizeGuideId.trim() !== ""
+          ? productData.sizeGuideId
+          : null,
       condition: productData.condition || null,
       createdAt: now,
       updatedAt: now,
@@ -274,9 +296,18 @@ export const productService = {
   },
 
   update: async (id: string, updates: any, user: User): Promise<Product> => {
+    // ✅ FIX: Clean sizeGuideId to prevent foreign key constraint violation
+    const cleanUpdates = {
+      ...updates,
+      sizeGuideId:
+        updates.sizeGuideId && updates.sizeGuideId.trim() !== ""
+          ? updates.sizeGuideId
+          : null,
+    };
+
     const { data, error } = await supabase
       .from("Product")
-      .update(updates)
+      .update(cleanUpdates)
       .eq("id", id)
       .select()
       .single();
@@ -312,6 +343,18 @@ export const productService = {
     if (duplicates.length > 0) {
       throw new Error(
         `SKU trùng lặp trong danh sách: ${duplicates.join(", ")}`
+      );
+    }
+
+    // ✅ Validate stock quantity > 0
+    const invalidStock = variants.filter(
+      (v) => !v.stockQuantity || v.stockQuantity <= 0
+    );
+    if (invalidStock.length > 0) {
+      throw new Error(
+        `Tồn kho phải lớn hơn 0 cho các SKU: ${invalidStock
+          .map((v) => `${v.sku} (${v.stockQuantity || 0})`)
+          .join(", ")}`
       );
     }
 
@@ -360,7 +403,8 @@ export const productService = {
             sku: variant.sku,
             size: variant.size,
             color: variant.color,
-            stockQuantity: variant.stockQuantity || 0,
+            stockQuantity:
+              variant.stockQuantity > 0 ? variant.stockQuantity : 1,
             priceAdjustment: variant.priceAdjustment || 0,
             imageUrl: variant.imageUrl || null,
             status: variant.status || "active",

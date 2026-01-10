@@ -2,26 +2,83 @@
  * Supabase Storage Helper
  *
  * Provides utilities for uploading and managing images in Supabase Storage
- * Replaces Base64 encoding approach with real file uploads
+ * Includes automatic image optimization and compression
  */
 
 import { supabase } from "./supabase";
+import {
+  optimizeImage,
+  validateImageFile,
+  formatFileSize,
+} from "./imageOptimizer";
 
 const STORAGE_BUCKET = "product-images";
 
 /**
- * Upload image to Supabase Storage
+ * Upload image to Supabase Storage with automatic optimization
  * @param file - File object from input
  * @param folder - Folder name in bucket (products, brands, categories, etc)
- * @returns Public URL of uploaded image
+ * @param enableOptimization - Whether to optimize image before upload (default: true)
+ * @returns Public URL of uploaded image and optimization stats
  */
 export async function uploadImage(
   file: File,
-  folder: string = "products"
-): Promise<string> {
+  folder: string = "products",
+  enableOptimization: boolean = true
+): Promise<{ url: string; stats?: any }> {
   try {
+    // Validate file
+    const validation = validateImageFile(file, 10);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    let fileToUpload = file;
+    let stats = null;
+
+    // Optimize image if enabled
+    if (enableOptimization) {
+      console.log(`🔧 [OPTIMIZE] Original size: ${formatFileSize(file.size)}`);
+
+      const optimized = await optimizeImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.85,
+        generateThumbnail: true,
+        thumbnailSize: 400,
+      });
+
+      fileToUpload = optimized.original;
+      stats = {
+        originalSize: formatFileSize(optimized.originalSize),
+        optimizedSize: formatFileSize(optimized.optimizedSize),
+        compressionRatio: `${optimized.compressionRatio}%`,
+      };
+
+      console.log(
+        `✅ [OPTIMIZE] Compressed to ${stats.optimizedSize} (saved ${stats.compressionRatio})`
+      );
+
+      // Upload thumbnail if generated
+      if (optimized.thumbnail) {
+        const thumbFileName = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(7)}_thumb.jpg`;
+        const thumbPath = `${folder}/${thumbFileName}`;
+
+        await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(thumbPath, optimized.thumbnail, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        console.log(`✅ [THUMBNAIL] Uploaded: ${thumbPath}`);
+      }
+    }
+
     // Generate unique filename
-    const fileExt = file.name.split(".").pop();
+    const fileExt = fileToUpload.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
       .substring(7)}.${fileExt}`;
@@ -32,8 +89,8 @@ export async function uploadImage(
     // Upload file to Supabase Storage
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: "3600",
+      .upload(filePath, fileToUpload, {
+        cacheControl: "3600", // CDN cache for 1 hour
         upsert: false,
       });
 
@@ -49,7 +106,7 @@ export async function uploadImage(
       data: { publicUrl },
     } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
 
-    return publicUrl;
+    return { url: publicUrl, stats };
   } catch (err: any) {
     console.error("❌ [UPLOAD] Exception:", err);
     throw err;
@@ -100,7 +157,8 @@ export async function uploadImages(
   folder: string = "products"
 ): Promise<string[]> {
   const uploadPromises = files.map((file) => uploadImage(file, folder));
-  return Promise.all(uploadPromises);
+  const results = await Promise.all(uploadPromises);
+  return results.map((r) => r.url);
 }
 
 /**
@@ -116,14 +174,14 @@ export async function replaceImage(
   folder: string = "products"
 ): Promise<string> {
   // Upload new image first
-  const newUrl = await uploadImage(newFile, folder);
+  const result = await uploadImage(newFile, folder);
 
   // Then delete old image (if exists and is from our storage)
   if (oldUrl && oldUrl.includes(STORAGE_BUCKET)) {
     await deleteImage(oldUrl);
   }
 
-  return newUrl;
+  return result.url;
 }
 
 /**

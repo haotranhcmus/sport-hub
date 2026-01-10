@@ -75,28 +75,70 @@ export const CheckoutPage = () => {
     address: "",
   });
 
-  // Requirement 4: Calculate Shipping Fee
+  // Requirement 4: Calculate Shipping Fee PER ITEM
   const calculateShipping = () => {
     // Free shipping if total > 1 million
     if (totalPrice > 1000000) return 0;
 
-    // If ALL products have freeShipping flag, then free
-    const allProductsFreeShip = items.every(
-      (item) => item.product.freeShipping
+    // Calculate number of items that need shipping fee
+    const itemsNeedShipping = items.filter(
+      (item) => !item.product.freeShipping
     );
-    if (allProductsFreeShip && items.length > 0) return 0;
 
-    // Otherwise calculate based on city
-    // Note: Products with freeShipping don't count toward shipping fee,
-    // but if there are non-freeship products, still charge shipping
+    // If no items need shipping, return 0
+    if (itemsNeedShipping.length === 0) return 0;
+
+    // Calculate base rate per city
+    let baseRate = 0;
     switch (formData.city) {
       case "HCM":
-        return 20000;
+        baseRate = 20000;
+        break;
       case "HN":
-        return 35000;
+        baseRate = 35000;
+        break;
       default:
-        return 50000;
+        baseRate = 50000;
     }
+
+    // Calculate total shipping: base rate for first item, 50% for additional items
+    const firstItemFee = baseRate;
+    const additionalItemsFee =
+      (itemsNeedShipping.length - 1) * (baseRate * 0.5);
+    return firstItemFee + additionalItemsFee;
+  };
+
+  // Calculate shipping fee for each item
+  const calculateItemShipping = (item: any) => {
+    // Free if total order > 1 million
+    if (totalPrice > 1000000) return 0;
+
+    // Free if product has freeShipping flag
+    if (item.product.freeShipping) return 0;
+
+    // Get items needing shipping
+    const itemsNeedShipping = items.filter((i) => !i.product.freeShipping);
+    const itemIndex = itemsNeedShipping.findIndex(
+      (i) => i.variantId === item.variantId
+    );
+
+    if (itemIndex === -1) return 0;
+
+    // Calculate base rate
+    let baseRate = 0;
+    switch (formData.city) {
+      case "HCM":
+        baseRate = 20000;
+        break;
+      case "HN":
+        baseRate = 35000;
+        break;
+      default:
+        baseRate = 50000;
+    }
+
+    // First item pays full, others pay 50%
+    return itemIndex === 0 ? baseRate : baseRate * 0.5;
   };
 
   const shippingFee = calculateShipping();
@@ -302,6 +344,7 @@ export const CheckoutPage = () => {
         productName: i.product.name,
         quantity: i.quantity,
         unitPrice: i.product.promotionalPrice || i.product.basePrice,
+        shippingFee: calculateItemShipping(i), // ✅ Tính phí ship cho từng item
         thumbnailUrl: i.product.thumbnailUrl,
         color: i.variant.color,
         size: i.variant.size,
@@ -579,37 +622,54 @@ export const CheckoutPage = () => {
               Đơn hàng của bạn
             </h2>
             <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {items.map((item) => (
-                <div key={item.variantId} className="flex gap-4">
-                  <img
-                    src={
-                      item.product.thumbnailUrl ||
-                      "https://via.placeholder.com/64"
-                    }
-                    className="w-16 h-16 rounded-xl object-cover border"
-                    alt={item.product.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://via.placeholder.com/64?text=No+Image";
-                    }}
-                  />
-                  <div className="flex-1">
-                    <p className="font-black text-gray-800 text-[11px] line-clamp-1 uppercase">
-                      {item.product.name}
-                    </p>
-                    <p className="text-[9px] text-gray-400 font-black uppercase">
-                      {item.variant.size} • {item.variant.color} x{" "}
-                      {item.quantity}
-                    </p>
-                    <p className="text-xs font-black text-gray-900 mt-1">
-                      {(
-                        item.product.promotionalPrice || item.product.basePrice
-                      ).toLocaleString()}
-                      đ
-                    </p>
+              {items.map((item) => {
+                const itemShipping = calculateItemShipping(item);
+                return (
+                  <div key={item.variantId} className="flex gap-4">
+                    <img
+                      src={
+                        item.product.thumbnailUrl ||
+                        "https://via.placeholder.com/64"
+                      }
+                      className="w-16 h-16 rounded-xl object-cover border"
+                      alt={item.product.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://via.placeholder.com/64?text=No+Image";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <p className="font-black text-gray-800 text-[11px] line-clamp-1 uppercase">
+                        {item.product.name}
+                      </p>
+                      <p className="text-[9px] text-gray-400 font-black uppercase">
+                        {item.variant.size} • {item.variant.color} x{" "}
+                        {item.quantity}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs font-black text-gray-900">
+                          {(
+                            item.product.promotionalPrice ||
+                            item.product.basePrice
+                          ).toLocaleString()}
+                          đ
+                        </p>
+                        {itemShipping > 0 && (
+                          <p className="text-[8px] font-black text-orange-600 uppercase flex items-center gap-1">
+                            <Truck size={10} /> +{itemShipping.toLocaleString()}
+                            đ
+                          </p>
+                        )}
+                        {item.product.freeShipping && (
+                          <p className="text-[8px] font-black text-green-600 uppercase flex items-center gap-1">
+                            <Truck size={10} /> FREESHIP
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="space-y-4 pt-6 border-t border-gray-100">

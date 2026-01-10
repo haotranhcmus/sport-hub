@@ -349,7 +349,8 @@ const ProductForm = ({
         imageUrl = await replaceImage(formData.thumbnailUrl, file, "products");
       } else {
         // New upload
-        imageUrl = await uploadImage(file, "products");
+        const result = await uploadImage(file, "products");
+        imageUrl = result.url;
       }
 
       setFormData({ ...formData, thumbnailUrl: imageUrl });
@@ -390,7 +391,15 @@ const ProductForm = ({
       if (savedProduct) {
         res = await api.products.update(savedProduct.id, formData, currentUser);
       } else {
-        res = await api.products.create(formData, currentUser);
+        // ✅ FIX: Clean sizeGuideId before sending to API
+        const cleanedData = {
+          ...formData,
+          sizeGuideId:
+            formData.sizeGuideId && formData.sizeGuideId.trim() !== ""
+              ? formData.sizeGuideId
+              : null,
+        };
+        res = await api.products.create(cleanedData, currentUser);
       }
       setSavedProduct(res);
       alert("Lưu thông tin sản phẩm thành công!");
@@ -950,7 +959,7 @@ const VariantManager = ({
           sku: `${product.productCode}-${colorCode}-${sizeCode}-${uniqueSuffix}`,
           color: color,
           size: size,
-          stockQuantity: 0,
+          stockQuantity: 1,
           priceAdjustment: 0,
           imageUrl: product.thumbnailUrl,
           status: "active",
@@ -985,7 +994,8 @@ const VariantManager = ({
     try {
       console.log(`📷 [VARIANT] Uploading image for variant ${index}...`);
 
-      const imageUrl = await uploadImage(file, "variants");
+      const result = await uploadImage(file, "variants");
+      const imageUrl = result.url;
 
       const newV = [...variants];
       newV[index].imageUrl = imageUrl;
@@ -1011,6 +1021,19 @@ const VariantManager = ({
         `SKU bị trùng lặp:\n${[...new Set(duplicates)].join(
           "\n"
         )}\n\nVui lòng chỉnh sửa SKU để đảm bảo tính duy nhất.`
+      );
+      return;
+    }
+
+    // ✅ Validate stock quantity > 0
+    const invalidStock = variants.filter(
+      (v) => !v.stockQuantity || v.stockQuantity <= 0
+    );
+    if (invalidStock.length > 0) {
+      alert(
+        `Tồn kho phải lớn hơn 0:\n${invalidStock
+          .map((v) => `${v.sku}: ${v.stockQuantity || 0}`)
+          .join("\n")}\n\nVui lòng nhập số lượng tồn kho hợp lệ (> 0).`
       );
       return;
     }
@@ -1137,11 +1160,13 @@ const VariantManager = ({
                   <td className="px-6 py-5 text-center">
                     <input
                       type="number"
+                      min="1"
                       className="w-20 bg-white border border-gray-200 rounded-xl p-2.5 text-center font-black text-sm outline-none focus:ring-2 focus:ring-secondary/10 shadow-sm text-slate-900"
                       value={v.stockQuantity}
                       onChange={(e) => {
                         const newV = [...variants];
-                        newV[i].stockQuantity = parseInt(e.target.value) || 0;
+                        const value = parseInt(e.target.value);
+                        newV[i].stockQuantity = value > 0 ? value : 1;
                         setVariants(newV);
                       }}
                     />

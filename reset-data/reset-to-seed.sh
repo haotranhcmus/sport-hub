@@ -87,20 +87,23 @@ fi
 echo ""
 
 # ============================================================================
-# BƯỚC 4: RESET DATABASE VÀ CHẠY MIGRATIONS
+# BƯỚC 4: XÓA DỮ LIỆU (GIỮ NGUYÊN CẤU TRÚC DATABASE)
 # ============================================================================
-echo "[3/5] Reset database và chạy migrations..."
+echo "[3/5] Xóa dữ liệu (giữ nguyên cấu trúc, trigger, function)..."
 echo ""
 
-# Clear Prisma cache to prevent schema mismatch
-echo "🗑️  Clearing Prisma Client cache..."
-rm -rf node_modules/.prisma 2>/dev/null || true
+# Chỉ xóa dữ liệu, KHÔNG drop/recreate database
+# Điều này giữ nguyên:
+# - Trigger review_stats_trigger
+# - Function update_product_review_stats()
+# - Tất cả indexes và constraints
+# - RLS policies (nếu có)
 
-# Reset database với Prisma
-npx prisma migrate reset --force --skip-seed
+echo "🗑️  Truncating tables..."
+npx tsx reset-data/seed.ts
 
 echo ""
-echo -e "${GREEN}✓ Database đã được reset thành công${NC}"
+echo -e "${GREEN}✓ Dữ liệu đã được xóa và seed lại${NC}"
 echo ""
 
 # ============================================================================
@@ -117,14 +120,24 @@ echo ""
 # ============================================================================
 # BƯỚC 6: KIỂM TRA KẾT QUẢ
 # ============================================================================
-echo "[5/5] Kiểm tra kết quả..."
+echo "[5/5] Kiểm tra database structure..."
 echo ""
 
-# Run seed manually
-npx tsx reset-data/seed.ts
+# Verify trigger still exists
+echo "🔍 Checking review_stats_trigger..."
+TRIGGER_EXISTS=$(PGPASSWORD="${DATABASE_PASSWORD:-postgres}" psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM pg_trigger WHERE tgname = 'review_stats_trigger';" 2>/dev/null || echo "0")
 
-echo ""
-echo -e "${GREEN}✓ Seed data đã được import thành công${NC}"
+if [ "$TRIGGER_EXISTS" -gt 0 ]; then
+    echo -e "${GREEN}✓ review_stats_trigger exists${NC}"
+else
+    echo -e "${YELLOW}⚠️  review_stats_trigger not found (this is OK for first setup)${NC}"
+fi
+
+# Verify indexes
+echo "🔍 Checking indexes..."
+INDEX_COUNT=$(PGPASSWORD="${DATABASE_PASSWORD:-postgres}" psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM pg_indexes WHERE tablename IN ('Order', 'Product', 'StockIssue');" 2>/dev/null || echo "0")
+echo -e "${GREEN}✓ Found $INDEX_COUNT indexes on core tables${NC}"
+
 echo ""
 
 # ============================================================================
