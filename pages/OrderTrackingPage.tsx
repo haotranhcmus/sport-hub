@@ -13,9 +13,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { api } from "../services";
-import { Order, OrderStatus } from "../types";
+import { OrderStatus } from "../types";
 import { useNavigate } from "react-router-dom";
-import { getOrderStatusLabel } from "../utils/helpers";
+import { getOrderStatusLabel } from "../utils";
 import {
   subscribeToOrderById,
   unsubscribeFromOrderById,

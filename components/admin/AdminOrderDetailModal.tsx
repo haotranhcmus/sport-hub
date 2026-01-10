@@ -28,7 +28,7 @@ import {
 import { Order, OrderStatus } from "../../types";
 import { api } from "../../services";
 import { useAuth } from "../../context/AuthContext";
-import { getOrderStatusLabel } from "../../utils/helpers";
+import { getOrderStatusLabel } from "../../utils";
 
 interface Props {
   order: Order;

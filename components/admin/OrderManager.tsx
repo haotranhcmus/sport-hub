@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { api } from "../../services";
 import { AdminOrderDetailModal } from "./AdminOrderDetailModal";
-import { getOrderStatusLabel } from "../../utils/helpers";
+import { getOrderStatusLabel } from "../../utils";
 import { useOrders } from "../../hooks/useOrdersQuery";
 import {
   subscribeToOrders,

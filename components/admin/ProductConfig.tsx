@@ -30,7 +30,7 @@ import { api } from "../../services";
 import { Category, Brand, ProductAttribute, SizeGuide } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import { InputField } from "./SharedUI";
-import { slugify } from "../../utils/helpers";
+import { slugify } from "../../utils";
 import { uploadImage, replaceImage } from "../../lib/storage";
 
 // Helper: Đọc file sang Base64

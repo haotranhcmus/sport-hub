@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Product } from "../../../types";
-import { formatCurrency } from "../../../utils/helpers";
+import { formatCurrency } from "../../../utils";
 import { usePrefetchProduct } from "../../../hooks/useProductsQuery";
 
 export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {

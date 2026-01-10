@@ -54,6 +54,7 @@ import {
   useSizeGuides,
 } from "../../hooks/useInventoryQuery";
 import { uploadImage, replaceImage } from "../../lib/storage";
+import { ProductFormTabs } from "./ProductFormTabs"; // ✅ NEW: Import new component
 
 const handleFileRead = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -66,7 +67,7 @@ const handleFileRead = (file: File): Promise<string> => {
 
 export const ProductManager = () => {
   const { user: currentUser } = useAuth();
-  const [view, setView] = useState<"list" | "form">("list");
+  const [showModal, setShowModal] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -85,12 +86,12 @@ export const ProductManager = () => {
 
   const handleEdit = (product: Product) => {
     setActiveProduct(product);
-    setView("form");
+    setShowModal(true);
   };
 
   const handleCreate = () => {
     setActiveProduct(null);
-    setView("form");
+    setShowModal(true);
   };
 
   const handleDelete = async (productId: string) => {
@@ -121,164 +122,174 @@ export const ProductManager = () => {
       p.productCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (view === "form") {
-    return (
-      <ProductForm
-        product={activeProduct}
-        categories={categories}
-        brands={brands}
-        allAttributes={attributes}
-        sizeGuides={sizeGuides}
-        onBack={() => {
-          setView("list");
-          refetchProducts();
-        }}
-      />
-    );
-  }
-
   return (
-    <div className="space-y-8 animate-in fade-in p-6 md:p-8 w-full">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div>
-          <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">
-            Kho hàng & Sản phẩm
-          </h2>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
-            Quản lý danh sách sản phẩm và biến thể SKU
-          </p>
+    <>
+      <div className="space-y-8 animate-in fade-in p-6 md:p-8 w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div>
+            <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">
+              Kho hàng & Sản phẩm
+            </h2>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
+              Quản lý danh sách sản phẩm và biến thể SKU
+            </p>
+          </div>
+          <button
+            onClick={handleCreate}
+            className="px-10 py-4 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase shadow-xl flex items-center gap-3 active:scale-95 transition"
+          >
+            <Plus size={18} /> Thêm sản phẩm mới
+          </button>
         </div>
-        <button
-          onClick={handleCreate}
-          className="px-10 py-4 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase shadow-xl flex items-center gap-3 active:scale-95 transition"
-        >
-          <Plus size={18} /> Thêm sản phẩm mới
-        </button>
-      </div>
 
-      <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex items-center gap-4">
-        <Search className="text-gray-300 ml-2" size={24} />
-        <input
-          type="text"
-          placeholder="Tìm theo tên hoặc mã sản phẩm..."
-          className="flex-1 bg-transparent border-none outline-none font-black text-sm uppercase text-slate-900"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex items-center gap-4">
+          <Search className="text-gray-300 ml-2" size={24} />
+          <input
+            type="text"
+            placeholder="Tìm theo tên hoặc mã sản phẩm..."
+            className="flex-1 bg-transparent border-none outline-none font-black text-sm uppercase text-slate-900"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-      <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
-            <tr>
-              <th className="px-10 py-6">Sản phẩm</th>
-              <th className="px-6 py-6">Phân loại</th>
-              <th className="px-6 py-6 text-center">Biến thể</th>
-              <th className="px-6 py-6 text-center">Trạng thái</th>
-              <th className="px-10 py-6 text-right"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filteredProducts.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50/50 transition group">
-                <td className="px-10 py-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden p-1 flex items-center justify-center shrink-0">
-                      <img
-                        src={
-                          p.thumbnailUrl ||
-                          "https://via.placeholder.com/56?text=No+Image"
-                        }
-                        className="max-w-full max-h-full object-contain"
-                        alt=""
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          if (!target.src.includes("placeholder")) {
-                            target.src =
-                              "https://via.placeholder.com/56?text=No+Image";
+        <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+              <tr>
+                <th className="px-10 py-6">Sản phẩm</th>
+                <th className="px-6 py-6">Phân loại</th>
+                <th className="px-6 py-6 text-center">Biến thể</th>
+                <th className="px-6 py-6 text-center">Trạng thái</th>
+                <th className="px-10 py-6 text-right"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredProducts.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50/50 transition group">
+                  <td className="px-10 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden p-1 flex items-center justify-center shrink-0">
+                        <img
+                          src={
+                            p.thumbnailUrl ||
+                            "https://via.placeholder.com/56?text=No+Image"
                           }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="font-black text-gray-800 uppercase text-sm line-clamp-1">
-                        {p.name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-[10px] font-bold text-secondary uppercase tracking-tighter">
-                          Mã: {p.productCode}
+                          className="max-w-full max-h-full object-contain"
+                          alt=""
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("placeholder")) {
+                              target.src =
+                                "https://via.placeholder.com/56?text=No+Image";
+                            }
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-800 uppercase text-sm line-clamp-1">
+                          {p.name}
                         </p>
-                        {p.freeShipping && (
-                          <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-black uppercase">
-                            Freeship
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-[10px] font-bold text-secondary uppercase tracking-tighter">
+                            Mã: {p.productCode}
+                          </p>
+                          {p.freeShipping && (
+                            <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-black uppercase">
+                              Freeship
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-6">
-                  <p className="text-xs font-black text-gray-600 uppercase">
-                    {categories.find((c) => c.id === p.categoryId)?.name}
-                  </p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">
-                    {brands.find((b) => b.id === p.brandId)?.name}
-                  </p>
-                </td>
-                <td className="px-6 py-6 text-center">
-                  <span className="px-3 py-1 bg-blue-50 text-secondary rounded-lg text-[10px] font-black uppercase">
-                    {p.variants?.length || 0} SKU
-                  </span>
-                </td>
-                <td className="px-6 py-6 text-center">
-                  <span
-                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                      p.status === ProductStatus.ACTIVE
-                        ? "bg-green-50 text-green-700"
-                        : "bg-gray-100 text-gray-400"
-                    }`}
-                  >
-                    {p.status}
-                  </span>
-                </td>
-                <td className="px-10 py-6 text-right">
-                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button
-                      onClick={() => handleEdit(p)}
-                      className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-secondary rounded-xl shadow-sm"
+                  </td>
+                  <td className="px-6 py-6">
+                    <p className="text-xs font-black text-gray-600 uppercase">
+                      {categories.find((c) => c.id === p.categoryId)?.name}
+                    </p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">
+                      {brands.find((b) => b.id === p.brandId)?.name}
+                    </p>
+                  </td>
+                  <td className="px-6 py-6 text-center">
+                    <span className="px-3 py-1 bg-blue-50 text-secondary rounded-lg text-[10px] font-black uppercase">
+                      {p.variants?.length || 0} SKU
+                    </span>
+                  </td>
+                  <td className="px-6 py-6 text-center">
+                    <span
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        p.status === ProductStatus.ACTIVE
+                          ? "bg-green-50 text-green-700"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
                     >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(p.id)}
-                      className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-red-500 rounded-xl shadow-sm"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td className="px-10 py-6 text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
+                      <button
+                        onClick={() => handleEdit(p)}
+                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-secondary rounded-xl shadow-sm"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-red-500 rounded-xl shadow-sm"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Fullscreen Product Form Modal */}
+        {showModal && (
+          <ProductFormModal
+            product={activeProduct}
+            categories={categories}
+            brands={brands}
+            allAttributes={attributes}
+            sizeGuides={sizeGuides}
+            onClose={() => {
+              setShowModal(false);
+              refetchProducts();
+            }}
+          />
+        )}
       </div>
-    </div>
+    </>
   );
 };
 
-const ProductForm = ({
+const ProductFormModal = ({
   product,
   categories,
   brands,
   allAttributes,
   sizeGuides,
-  onBack,
+  onClose,
 }: any) => {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"info" | "variants">("info");
   const [loading, setLoading] = useState(false);
   const [savedProduct, setSavedProduct] = useState<Product | null>(product);
   const mainFileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = () => {
+    if (loading) return;
+    const confirmed = window.confirm(
+      "Đóng form? Thông tin chưa lưu sẽ bị mất."
+    );
+    if (confirmed) onClose();
+  };
 
   const [formData, setFormData] = useState({
     name: product?.name || "",
@@ -289,6 +300,7 @@ const ProductForm = ({
     basePrice: product?.basePrice || "",
     promotionalPrice: product?.promotionalPrice || "",
     thumbnailUrl: product?.thumbnailUrl || "",
+    imageUrls: product?.imageUrls || [], // ✅ Multiple images support
     status: product?.status || ProductStatus.ACTIVE,
     attributes: product?.attributes || {},
     freeShipping: product?.freeShipping || false,
@@ -297,6 +309,10 @@ const ProductForm = ({
     sizeGuideId: product?.sizeGuideId || "",
     condition: product?.condition || "Mới 100% Full Box",
   });
+
+  const [infoTab, setInfoTab] = useState<
+    "basic" | "media" | "specs" | "policies"
+  >("basic"); // ✅ Sub-tabs for better UX
 
   const categoryAttributes = useMemo(() => {
     if (!formData.categoryId) return [];
@@ -363,6 +379,63 @@ const ProductForm = ({
     }
   };
 
+  // ✅ NEW: Handle multiple gallery images upload
+  const handleGalleryImagesUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate total images (max 8 including thumbnail)
+    const currentImages = formData.imageUrls || [];
+    if (currentImages.length + files.length > 8) {
+      alert(
+        `⚠️ Tối đa 8 ảnh. Hiện có ${
+          currentImages.length
+        } ảnh, chỉ có thể thêm ${8 - currentImages.length} ảnh nữa.`
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          console.warn("Skip non-image file:", file.name);
+          continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          console.warn("Skip oversized file:", file.name);
+          continue;
+        }
+
+        const result = await uploadImage(file, "products");
+        uploadedUrls.push(result.url);
+      }
+
+      setFormData({
+        ...formData,
+        imageUrls: [...currentImages, ...uploadedUrls],
+      });
+
+      console.log(`✅ Uploaded ${uploadedUrls.length} images`);
+    } catch (error: any) {
+      console.error("❌ Gallery upload error:", error);
+      alert("❌ Lỗi upload ảnh: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Remove gallery image
+  const handleRemoveGalleryImage = (index: number) => {
+    const newImages = [...(formData.imageUrls || [])];
+    newImages.splice(index, 1);
+    setFormData({ ...formData, imageUrls: newImages });
+  };
+
   const handleSaveParent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -413,440 +486,129 @@ const ProductForm = ({
   };
 
   return (
-    <div className="w-full space-y-10 animate-in slide-in-from-bottom-8 p-6 md:p-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col animate-in zoom-in-95 duration-300">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-t-3xl">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-secondary/10 rounded-2xl">
+              <Package size={24} className="text-secondary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">
+                {savedProduct ? "Cập nhật sản phẩm" : "Tạo sản phẩm mới"}
+              </h2>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                {formData.name || "Đang nhập liệu..."}
+              </p>
+            </div>
+          </div>
           <button
-            onClick={onBack}
-            className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:bg-gray-50 transition"
+            onClick={handleClose}
+            disabled={loading}
+            className="p-3 hover:bg-gray-100 rounded-2xl transition-colors disabled:opacity-50"
           >
-            <ArrowLeft size={24} />
+            <X size={24} className="text-gray-600" />
           </button>
-          <div>
-            <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight">
-              {savedProduct ? "Cập nhật sản phẩm" : "Tạo sản phẩm mới"}
-            </h2>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
-              Sản phẩm: {formData.name || "Đang nhập liệu..."}
-            </p>
-          </div>
         </div>
-      </div>
 
-      <div className="flex border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab("info")}
-          className={`px-10 py-5 font-black text-xs uppercase tracking-widest transition-all relative ${
-            activeTab === "info"
-              ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <FileText size={18} /> Thông tin chung
-          </div>
-        </button>
-        <button
-          onClick={() => {
-            if (!savedProduct) {
-              alert("Vui lòng lưu Thông tin chung trước khi quản lý biến thể.");
-              return;
-            }
-            setActiveTab("variants");
-          }}
-          className={`px-10 py-5 font-black text-xs uppercase tracking-widest transition-all relative ${
-            activeTab === "variants"
-              ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
-              : "text-gray-400 hover:text-gray-600"
-          } ${!savedProduct ? "cursor-not-allowed opacity-50" : ""}`}
-        >
-          <div className="flex items-center gap-3">
-            <LayoutGrid size={18} /> Quản lý biến thể
-            {!savedProduct && <Lock size={12} className="ml-2" />}
-          </div>
-        </button>
-      </div>
-
-      <div className="mt-8">
-        {activeTab === "info" ? (
-          <form
-            onSubmit={handleSaveParent}
-            className="bg-white p-8 md:p-12 rounded-[40px] shadow-sm border border-gray-100 space-y-12"
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 px-8 bg-white">
+          <button
+            onClick={() => setActiveTab("info")}
+            className={`px-8 py-4 font-black text-xs uppercase tracking-widest transition-all relative ${
+              activeTab === "info"
+                ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-4 space-y-6">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <ImageIcon size={14} className="text-secondary" /> Ảnh đại
-                  diện sản phẩm
-                </label>
-                <div className="relative aspect-square w-full bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden group transition-all hover:border-secondary/40">
-                  {formData.thumbnailUrl ? (
-                    <>
-                      <img
-                        src={formData.thumbnailUrl}
-                        className="w-full h-full object-contain p-4"
-                        alt=""
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          if (!target.src.includes("placeholder")) {
-                            target.src =
-                              "https://via.placeholder.com/400?text=No+Image";
-                          }
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
-                        <button
-                          type="button"
-                          onClick={() => mainFileInputRef.current?.click()}
-                          className="p-3 bg-white text-slate-900 rounded-2xl shadow-xl hover:scale-110 transition"
-                        >
-                          <Upload size={20} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData({ ...formData, thumbnailUrl: "" })
-                          }
-                          className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:scale-110 transition"
-                        >
-                          <X size={20} />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => mainFileInputRef.current?.click()}
-                      className="text-center p-6 space-y-4 hover:scale-105 transition active:scale-95 group/btn"
-                    >
-                      <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mx-auto text-secondary transition-transform duration-300 group-hover/btn:scale-110">
-                        <Upload size={32} />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-800 uppercase">
-                          Tải ảnh lên
-                        </p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
-                          (.png, .jpg)
-                        </p>
-                      </div>
-                    </button>
-                  )}
-                  <input
-                    type="file"
-                    ref={mainFileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleMainImageUpload}
-                  />
-                </div>
-              </div>
-
-              <div className="lg:col-span-8 space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <InputField
-                    label="Tên sản phẩm *"
-                    value={formData.name}
-                    onChange={(v: any) => setFormData({ ...formData, name: v })}
-                    required
-                  />
-                  <InputField
-                    label="Mã sản phẩm (Model) *"
-                    value={formData.productCode}
-                    onChange={(v: any) =>
-                      setFormData({ ...formData, productCode: v })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                      Danh mục *
-                    </label>
-                    <select
-                      required
-                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-black text-sm outline-none focus:ring-2 focus:ring-secondary/10 text-slate-900 cursor-pointer"
-                      value={formData.categoryId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, categoryId: e.target.value })
-                      }
-                    >
-                      <option value="">-- Chọn danh mục --</option>
-                      {categories.map((c: any) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                      Thương hiệu *
-                    </label>
-                    <select
-                      required
-                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-black text-sm outline-none focus:ring-2 focus:ring-secondary/10 text-slate-900 cursor-pointer"
-                      value={formData.brandId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, brandId: e.target.value })
-                      }
-                    >
-                      <option value="">-- Chọn thương hiệu --</option>
-                      {brands.map((b: any) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <InputField
-                    label="Giá niêm yết"
-                    type="number"
-                    suffix="VND"
-                    value={formData.basePrice}
-                    onChange={(v: any) =>
-                      setFormData({ ...formData, basePrice: v })
-                    }
-                  />
-                  <InputField
-                    label="Giá KM"
-                    type="number"
-                    suffix="VND"
-                    value={formData.promotionalPrice}
-                    onChange={(v: any) =>
-                      setFormData({ ...formData, promotionalPrice: v })
-                    }
-                  />
-                  <InputField
-                    label="Tình trạng *"
-                    value={formData.condition}
-                    onChange={(v: any) =>
-                      setFormData({ ...formData, condition: v })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                      Bảng size riêng
-                    </label>
-                    <select
-                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-black text-xs outline-none focus:ring-2 focus:ring-secondary/10 text-slate-900 cursor-pointer"
-                      value={formData.sizeGuideId}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          sizeGuideId: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Sử dụng của Danh mục</option>
-                      {sizeGuides.map((sg: SizeGuide) => (
-                        <option key={sg.id} value={sg.id}>
-                          {sg.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      Giao hàng miễn phí
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          freeShipping: !formData.freeShipping,
-                        })
-                      }
-                      className={`h-14 flex items-center justify-center gap-3 rounded-2xl border-2 transition font-black text-xs uppercase ${
-                        formData.freeShipping
-                          ? "bg-blue-50 border-secondary text-secondary"
-                          : "bg-gray-50 border-gray-100 text-gray-400"
-                      }`}
-                    >
-                      <Truck size={18} />{" "}
-                      {formData.freeShipping ? "Đã kích hoạt" : "Không áp dụng"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* CHÍNH SÁCH ĐỔI TRẢ HIỆN ĐẠI */}
-                <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-200 space-y-6">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`p-3 rounded-2xl ${
-                          formData.allowReturn
-                            ? "bg-green-500 text-white shadow-lg"
-                            : "bg-gray-200 text-gray-400"
-                        }`}
-                      >
-                        <RotateCcw size={24} />
-                      </div>
-                      <div>
-                        <p className="font-black text-sm uppercase tracking-tight">
-                          Chính sách đổi trả
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">
-                          Áp dụng cho khách hàng khi mua sản phẩm này
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          allowReturn: !formData.allowReturn,
-                        })
-                      }
-                      className={`px-8 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                        formData.allowReturn
-                          ? "bg-secondary text-white shadow-xl"
-                          : "bg-white border border-gray-200 text-gray-400"
-                      }`}
-                    >
-                      {formData.allowReturn ? "ĐANG BẬT" : "ĐANG TẮT"}
-                    </button>
-                  </div>
-
-                  {formData.allowReturn && (
-                    <div className="animate-in slide-in-from-top-4 pt-4 border-t border-slate-200">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                        Thời hạn hỗ trợ đổi trả *
-                      </label>
-                      <div className="grid grid-cols-3 gap-4">
-                        {[7, 14, 30].map((days) => (
-                          <button
-                            key={days}
-                            type="button"
-                            onClick={() =>
-                              setFormData({ ...formData, returnPeriod: days })
-                            }
-                            className={`py-4 rounded-2xl font-black text-xs transition-all border-2 ${
-                              formData.returnPeriod === days
-                                ? "bg-white border-secondary text-secondary shadow-lg scale-105"
-                                : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
-                            }`}
-                          >
-                            {days} NGÀY
-                          </button>
-                        ))}
-                      </div>
-                      <p className="mt-4 text-[9px] font-bold text-slate-400 italic uppercase flex items-center gap-2">
-                        <InfoIcon size={12} /> Khách hàng được đổi mẫu/size
-                        trong vòng {formData.returnPeriod} ngày kể từ ngày nhận
-                        hàng.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              <FileText size={16} /> Thông tin chung
             </div>
-
-            <div className="bg-white p-8 md:p-12 rounded-[40px] shadow-sm border border-gray-100 space-y-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <InfoIcon size={14} className="text-secondary" /> Thông số & Đặc
-                tính kỹ thuật
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {specificationAttributes.map((attr) => (
-                  <div key={attr.id} className="space-y-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      {attr.name}
-                    </label>
-                    {attr.values.length > 0 ? (
-                      <select
-                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-secondary/10"
-                        value={(formData.attributes as any)[attr.code] || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            attributes: {
-                              ...formData.attributes,
-                              [attr.code]: e.target.value,
-                            },
-                          })
-                        }
-                      >
-                        <option value="">-- Chọn {attr.name} --</option>
-                        {attr.values.map((v) => (
-                          <option key={v} value={v}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-secondary/10"
-                        value={(formData.attributes as any)[attr.code] || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            attributes: {
-                              ...formData.attributes,
-                              [attr.code]: e.target.value,
-                            },
-                          })
-                        }
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+          </button>
+          <button
+            onClick={() => {
+              if (!savedProduct) {
+                alert(
+                  "Vui lòng lưu Thông tin chung trước khi quản lý biến thể."
+                );
+                return;
+              }
+              setActiveTab("variants");
+            }}
+            className={`px-8 py-4 font-black text-xs uppercase tracking-widest transition-all relative ${
+              activeTab === "variants"
+                ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
+                : "text-gray-400 hover:text-gray-600"
+            } ${!savedProduct ? "cursor-not-allowed opacity-50" : ""}`}
+          >
+            <div className="flex items-center gap-3">
+              <LayoutGrid size={16} /> Quản lý biến thể
+              {!savedProduct && <Lock size={12} className="ml-2" />}
             </div>
+          </button>
+        </div>
 
-            <div className="space-y-4 pt-8 border-t border-gray-100">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <FileText size={14} className="text-secondary" /> Mô tả nội dung
-                sản phẩm
-              </label>
-              <textarea
-                className="w-full bg-gray-50 border border-gray-100 rounded-[32px] px-8 py-8 font-medium text-sm outline-none min-h-[240px] text-slate-900 focus:ring-2 focus:ring-secondary/10 transition leading-relaxed"
-                placeholder="Mô tả công nghệ, trải nghiệm người dùng, chất liệu chi tiết..."
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+        {/* Modal Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-8 py-6">
+          {activeTab === "info" ? (
+            <form
+              onSubmit={handleSaveParent}
+              className="space-y-6 max-w-6xl mx-auto"
+            >
+              {/* ✅ NEW: Use ProductFormTabs component */}
+              <ProductFormTabs
+                formData={formData}
+                setFormData={setFormData}
+                categories={categories}
+                brands={brands}
+                sizeGuides={sizeGuides}
+                specificationAttributes={specificationAttributes}
+                mainFileInputRef={mainFileInputRef}
+                galleryFileInputRef={galleryFileInputRef}
+                handleMainImageUpload={handleMainImageUpload}
+                handleGalleryImagesUpload={handleGalleryImagesUpload}
+                handleRemoveGalleryImage={handleRemoveGalleryImage}
+                loading={loading}
               />
-            </div>
 
-            <div className="pt-8 border-t border-gray-100 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full md:w-auto px-20 py-6 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-900/30 flex items-center justify-center gap-4 hover:bg-black transition active:scale-95 text-xs"
-              >
-                {loading ? (
-                  <RefreshCw className="animate-spin" />
-                ) : (
-                  <>
-                    <Save size={18} />{" "}
-                    {savedProduct
-                      ? "CẬP NHẬT THÔNG TIN"
-                      : "TIẾP TỤC & TẠO BIẾN THỂ"}
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <VariantManager
-            product={savedProduct!}
-            attributes={variantAttributes}
-            parentFormData={formData}
-            onSuccess={onBack}
-          />
-        )}
+              {/* Submit Button */}
+              <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent pt-6 pb-2 -mx-8 px-8">
+                <div className="flex justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={loading}
+                    className="px-10 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold uppercase tracking-wider hover:bg-gray-200 transition text-xs disabled:opacity-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-12 py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 hover:from-black hover:to-slate-900 transition active:scale-95 text-xs disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <RefreshCw className="animate-spin" size={18} />
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        {savedProduct ? "CẬP NHẬT" : "LƯU & TẠO BIẾN THỂ"}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <VariantManager
+              product={savedProduct!}
+              attributes={variantAttributes}
+              parentFormData={formData}
+              onSuccess={onClose}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

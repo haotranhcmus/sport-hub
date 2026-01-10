@@ -104,6 +104,7 @@ export interface Product {
   basePrice: number;
   promotionalPrice?: number;
   thumbnailUrl: string;
+  imageUrls?: string[]; // ✅ NEW: Gallery images for product detail page
   status: ProductStatus;
   categoryId: string;
   brandId: string;

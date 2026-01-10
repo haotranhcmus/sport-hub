@@ -14,7 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { CartDrawer } from "../features/cart/CartDrawer";
 import { api } from "../../services";
 import { Product } from "../../types/index";
-import { removeAccents } from "../../utils/helpers";
+import { removeAccents } from "../../utils"; // ✅ FIX: Correct import path
 
 export const Layout = () => {
   const { totalItems, toggleCart } = useCart();

@@ -248,6 +248,7 @@ export const productService = {
         ? Number(productData.promotionalPrice)
         : null,
       thumbnailUrl: productData.thumbnailUrl || "",
+      imageUrls: productData.imageUrls || [], // ✅ NEW: Gallery images
       status: productData.status || "ACTIVE",
       categoryId: productData.categoryId,
       brandId: productData.brandId,
