@@ -206,16 +206,13 @@ export const ProductDetailPage = () => {
         ? product.thumbnailUrl
         : "https://via.placeholder.com/600?text=No+Image";
 
-    // Only create variants if it's a valid HTTP URL, not base64
-    if (baseUrl.startsWith("http")) {
-      return [
-        baseUrl,
-        `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}v=2`,
-        `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}v=3`,
-      ];
-    }
-    // If it's base64 or other format, just return single image
-    return [baseUrl];
+    // ✅ NEW: Include imageUrls array (gallery images)
+    const galleryImages = product.imageUrls || [];
+
+    // Return thumbnail + all gallery images
+    return [baseUrl, ...galleryImages].filter(
+      (url) => url && url.trim() !== ""
+    );
   }, [product]);
 
   if (loading)

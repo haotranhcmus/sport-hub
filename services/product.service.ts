@@ -20,6 +20,7 @@ export const productService = {
           basePrice,
           promotionalPrice,
           thumbnailUrl,
+          imageUrls,
           status,
           categoryId,
           brandId,
@@ -248,7 +249,9 @@ export const productService = {
         ? Number(productData.promotionalPrice)
         : null,
       thumbnailUrl: productData.thumbnailUrl || "",
-      imageUrls: productData.imageUrls || [], // ✅ NEW: Gallery images
+      imageUrls: Array.isArray(productData.imageUrls)
+        ? productData.imageUrls
+        : [], // ✅ Ensure array
       status: productData.status || "ACTIVE",
       categoryId: productData.categoryId,
       brandId: productData.brandId,
@@ -297,24 +300,60 @@ export const productService = {
   },
 
   update: async (id: string, updates: any, user: User): Promise<Product> => {
+    // ✅ DEBUG: Log imageUrls before update
+    console.log("🔍 Product update data:", {
+      id,
+      imageUrls: updates.imageUrls,
+      imageUrlsType: typeof updates.imageUrls,
+      imageUrlsLength: updates.imageUrls?.length,
+    });
+
+    // ✅ FIX: Ensure imageUrls is properly formatted as array
+    const imageUrls = Array.isArray(updates.imageUrls) ? updates.imageUrls : [];
+
     // ✅ FIX: Clean sizeGuideId to prevent foreign key constraint violation
     const cleanUpdates = {
       ...updates,
+      imageUrls, // Explicitly set imageUrls as array
       sizeGuideId:
         updates.sizeGuideId && updates.sizeGuideId.trim() !== ""
           ? updates.sizeGuideId
           : null,
+      updatedAt: new Date().toISOString(),
     };
 
+    console.log("📤 Sending to Supabase:", {
+      imageUrls: cleanUpdates.imageUrls,
+      imageUrlsIsArray: Array.isArray(cleanUpdates.imageUrls),
+    });
+
+    // ✅ IMPORTANT: Supabase needs explicit select to return array columns
     const { data, error } = await supabase
       .from("Product")
       .update(cleanUpdates)
       .eq("id", id)
-      .select()
+      .select(
+        `
+        *,
+        brand:Brand(*),
+        category:Category(*),
+        sizeGuide:SizeGuide(*)
+      `
+      )
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("❌ Supabase update error:", error);
+      throw new Error(error.message);
+    }
 
+    console.log("✅ Updated product:", {
+      id: data.id,
+      imageUrls: data.imageUrls,
+      imageUrlsLength: data.imageUrls?.length,
+    });
+
+    // Log system activity
     await supabase.from("SystemLog").insert(
       createSystemLog({
         actionType: "UPDATE",
@@ -325,7 +364,7 @@ export const productService = {
       })
     );
 
-    return data;
+    return data as Product;
   },
 
   saveVariants: async (productId: string, variants: any[], user: User) => {

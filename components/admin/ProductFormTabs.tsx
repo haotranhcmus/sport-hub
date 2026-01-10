@@ -1,5 +1,5 @@
-// ✅ IMPROVED: Product Form với Sub-tabs để giảm scrolling
-import React from "react";
+// ✅ NOTION-STYLE: Product Form with Mini Sidebar Navigation
+import React, { useRef, useEffect } from "react";
 import {
   Package,
   Image as ImageIcon,
@@ -43,73 +43,115 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
   handleRemoveGalleryImage,
   loading,
 }) => {
-  const [activeSubTab, setActiveSubTab] = React.useState<
-    "basic" | "media" | "specs" | "policies"
-  >("basic");
+  const [activeSection, setActiveSection] = React.useState("basic");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const basicRef = useRef<HTMLDivElement>(null);
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const specsRef = useRef<HTMLDivElement>(null);
+  const policiesRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSection = (sectionId: string) => {
+    const refs = {
+      basic: basicRef,
+      media: mediaRef,
+      specs: specsRef,
+      policies: policiesRef,
+    };
+    const targetRef = refs[sectionId as keyof typeof refs];
+    if (targetRef.current && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const target = targetRef.current;
+
+      // Get the target's position relative to the container
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const relativeTop = targetRect.top - containerRect.top;
+
+      // Scroll with offset to keep title visible (add current scroll position)
+      container.scrollTo({
+        top: container.scrollTop + relativeTop - 20,
+        behavior: "smooth",
+      });
+      setActiveSection(sectionId);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Sub-tabs Navigation */}
-      <div className="flex gap-2 p-2 bg-gray-50 rounded-2xl overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("basic")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeSubTab === "basic"
-              ? "bg-white text-secondary shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Package size={16} />
-          Thông tin cơ bản
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("media")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeSubTab === "media"
-              ? "bg-white text-secondary shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <ImageIcon size={16} />
-          Hình ảnh (
-          {(formData.imageUrls?.length || 0) + (formData.thumbnailUrl ? 1 : 0)}
-          /9)
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("specs")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeSubTab === "specs"
-              ? "bg-white text-secondary shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Settings2 size={16} />
-          Thông số kỹ thuật
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("policies")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeSubTab === "policies"
-              ? "bg-white text-secondary shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <ShieldCheck size={16} />
-          Chính sách
-        </button>
+    <div className="flex gap-6 h-full">
+      {/* 🎯 MINI SIDEBAR - Notion/Odoo Style */}
+      <div className="w-56 flex-shrink-0">
+        <div className="sticky top-0 space-y-1 bg-gray-50/50 rounded-2xl p-3">
+          <button
+            type="button"
+            onClick={() => scrollToSection("basic")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all text-left ${
+              activeSection === "basic"
+                ? "bg-white text-secondary shadow-sm"
+                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            }`}
+          >
+            <Package size={16} />
+            <span>Cơ bản</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection("media")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all text-left ${
+              activeSection === "media"
+                ? "bg-white text-secondary shadow-sm"
+                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            }`}
+          >
+            <ImageIcon size={16} />
+            <span>Hình ảnh</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection("specs")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all text-left ${
+              activeSection === "specs"
+                ? "bg-white text-secondary shadow-sm"
+                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            }`}
+          >
+            <Settings2 size={16} />
+            <span>Thông số</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection("policies")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all text-left ${
+              activeSection === "policies"
+                ? "bg-white text-secondary shadow-sm"
+                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            }`}
+          >
+            <ShieldCheck size={16} />
+            <span>Chính sách</span>
+          </button>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="bg-white rounded-2xl">
-        {/* BASIC INFO */}
-        {activeSubTab === "basic" && (
-          <div className="space-y-6 animate-in fade-in-50 duration-300">
+      {/* 📄 SCROLLABLE CONTENT - All sections visible */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 space-y-8 overflow-y-auto pr-2 scroll-smooth"
+        style={{ maxHeight: "calc(100vh - 280px)", scrollPaddingTop: "20px" }}
+      >
+        {/* SECTION 1: BASIC INFO */}
+        <div
+          ref={basicRef}
+          className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100"
+          style={{ scrollMarginTop: "20px" }}
+        >
+          <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-6 flex items-center gap-3">
+            <div className="p-2 bg-secondary/10 rounded-xl">
+              <Package size={20} className="text-secondary" />
+            </div>
+            Thông tin cơ bản
+          </h3>
+          <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 2-COLUMN LAYOUT */}
               <InputField
                 label="Tên sản phẩm *"
                 value={formData.name}
@@ -140,11 +182,13 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
                   }
                 >
                   <option value="">-- Chọn danh mục --</option>
-                  {categories.map((c: any) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+                  {categories
+                    .filter((c: any) => c.parentId !== null)
+                    .map((c: any) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="space-y-2">
@@ -213,11 +257,26 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
               />
             </div>
           </div>
-        )}
+        </div>
 
-        {/* MEDIA / IMAGES */}
-        {activeSubTab === "media" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in-50 duration-300">
+        {/* SECTION 2: MEDIA / IMAGES */}
+        <div
+          ref={mediaRef}
+          className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100"
+          style={{ scrollMarginTop: "20px" }}
+        >
+          <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-6 flex items-center gap-3">
+            <div className="p-2 bg-secondary/10 rounded-xl">
+              <ImageIcon size={20} className="text-secondary" />
+            </div>
+            Hình ảnh sản phẩm
+            <span className="ml-auto text-xs font-bold text-gray-400">
+              {(formData.imageUrls?.length || 0) +
+                (formData.thumbnailUrl ? 1 : 0)}
+              /9 ảnh
+            </span>
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* LEFT: Thumbnail */}
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -349,11 +408,21 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
               </p>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* SPECIFICATIONS */}
-        {activeSubTab === "specs" && (
-          <div className="space-y-8 animate-in fade-in-50 duration-300">
+        {/* SECTION 3: SPECIFICATIONS */}
+        <div
+          ref={specsRef}
+          className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100"
+          style={{ scrollMarginTop: "20px" }}
+        >
+          <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-6 flex items-center gap-3">
+            <div className="p-2 bg-secondary/10 rounded-xl">
+              <Settings2 size={20} className="text-secondary" />
+            </div>
+            Thông số kỹ thuật
+          </h3>
+          <div className="space-y-8">
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
                 Bảng size riêng
@@ -425,11 +494,21 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
               </div>
             )}
           </div>
-        )}
+        </div>
 
-        {/* POLICIES */}
-        {activeSubTab === "policies" && (
-          <div className="space-y-8 animate-in fade-in-50 duration-300">
+        {/* SECTION 4: POLICIES */}
+        <div
+          ref={policiesRef}
+          className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100"
+          style={{ scrollMarginTop: "20px" }}
+        >
+          <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-6 flex items-center gap-3">
+            <div className="p-2 bg-secondary/10 rounded-xl">
+              <ShieldCheck size={20} className="text-secondary" />
+            </div>
+            Chính sách & Ưu đãi
+          </h3>
+          <div className="space-y-8">
             {/* Free Shipping */}
             <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
               <div className="flex items-center justify-between">
@@ -538,7 +617,7 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

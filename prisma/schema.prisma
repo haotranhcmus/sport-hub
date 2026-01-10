@@ -82,13 +82,12 @@ model Product {
   basePrice        Float
   promotionalPrice Float?
   thumbnailUrl     String
-  imageUrls        String[]         @default([])     // ✅ Gallery images for product detail page
   status           ProductStatus    @default(ACTIVE)
   categoryId       String
   brandId          String
   totalSold        Int              @default(0)
-  reviewCount      Int              @default(0)      // Cache review count
-  averageRating    Float            @default(0)      // Cache average rating
+  reviewCount      Int              @default(0)
+  averageRating    Float            @default(0)
   allowReturn      Boolean          @default(true)
   returnPeriod     Int              @default(7)
   freeShipping     Boolean          @default(false)
@@ -97,6 +96,7 @@ model Product {
   condition        String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  imageUrls        String[]         @default([])
   orderItems       OrderItem[]
   brand            Brand            @relation(fields: [brandId], references: [id])
   category         Category         @relation(fields: [categoryId], references: [id])
@@ -203,18 +203,18 @@ model Order {
   @@index([paymentStatus])
   @@index([customerPhone])
   @@index([createdAt])
-  @@index([userId, status, createdAt]) // Composite index for common query pattern
+  @@index([userId, status, createdAt])
 }
 
 model OrderItem {
   id             String           @id @default(uuid())
   orderId        String
   productId      String
-  variantId      String?          // Thêm để track variant cụ thể
+  variantId      String?
   productName    String
   quantity       Int
   unitPrice      Float
-  shippingFee    Float            @default(0) // Phí ship cho item này
+  shippingFee    Float            @default(0)
   color          String?
   size           String?
   thumbnailUrl   String?
@@ -322,7 +322,7 @@ model StockIssue {
   @@index([date])
   @@index([status])
   @@index([type])
-  @@index([actorName]) // For search by actor
+  @@index([actorName])
 }
 
 model Stocktake {

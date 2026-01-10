@@ -259,6 +259,12 @@ export const ProductManager = () => {
             sizeGuides={sizeGuides}
             onClose={() => {
               setShowModal(false);
+              setActiveProduct(null); // Clear active product
+              refetchProducts(); // Refetch to get fresh data
+            }}
+            onSave={(updatedProduct: Product) => {
+              // ✅ Update activeProduct with fresh data from save
+              setActiveProduct(updatedProduct);
               refetchProducts();
             }}
           />
@@ -275,11 +281,13 @@ const ProductFormModal = ({
   allAttributes,
   sizeGuides,
   onClose,
+  onSave,
 }: any) => {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"info" | "variants">("info");
   const [loading, setLoading] = useState(false);
   const [savedProduct, setSavedProduct] = useState<Product | null>(product);
+  const [variants, setVariants] = useState<any[]>(product?.variants || []);
   const mainFileInputRef = useRef<HTMLInputElement>(null);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -309,6 +317,35 @@ const ProductFormModal = ({
     sizeGuideId: product?.sizeGuideId || "",
     condition: product?.condition || "Mới 100% Full Box",
   });
+
+  // ✅ FIX: Sync formData when product prop changes (after update)
+  useEffect(() => {
+    if (product) {
+      console.log("🔄 Syncing formData with updated product:", {
+        productId: product.id,
+        imageUrls: product.imageUrls,
+        imageUrlsLength: product.imageUrls?.length,
+      });
+      setFormData({
+        name: product.name || "",
+        productCode: product.productCode || "",
+        categoryId: product.categoryId || "",
+        brandId: product.brandId || "",
+        description: product.description || "",
+        basePrice: product.basePrice || "",
+        promotionalPrice: product.promotionalPrice || "",
+        thumbnailUrl: product.thumbnailUrl || "",
+        imageUrls: product.imageUrls || [], // ✅ Sync imageUrls from updated product
+        status: product.status || ProductStatus.ACTIVE,
+        attributes: product.attributes || {},
+        freeShipping: product.freeShipping || false,
+        allowReturn: product.allowReturn ?? true,
+        returnPeriod: product.returnPeriod || 7,
+        sizeGuideId: product.sizeGuideId || "",
+        condition: product.condition || "Mới 100% Full Box",
+      });
+    }
+  }, [product]);
 
   const [infoTab, setInfoTab] = useState<
     "basic" | "media" | "specs" | "policies"
@@ -436,6 +473,49 @@ const ProductFormModal = ({
     setFormData({ ...formData, imageUrls: newImages });
   };
 
+  // ✅ NEW: Save everything (product + variants) for editing mode
+  const handleSaveEverything = async () => {
+    if (!currentUser || !savedProduct) return;
+
+    // Validate SKU uniqueness
+    const skus = variants.map((v) => v.sku);
+    const duplicates = skus.filter((sku, idx) => skus.indexOf(sku) !== idx);
+    if (duplicates.length > 0) {
+      alert(
+        `SKU bị trùng lặp:\n${[...new Set(duplicates)].join(
+          "\n"
+        )}\n\nVui lòng chỉnh sửa SKU để đảm bảo tính duy nhất.`
+      );
+      return;
+    }
+
+    // Validate stock quantity > 0
+    const invalidStock = variants.filter(
+      (v) => !v.stockQuantity || v.stockQuantity <= 0
+    );
+    if (invalidStock.length > 0) {
+      alert(
+        `Tồn kho phải lớn hơn 0:\n${invalidStock
+          .map((v) => `${v.sku}: ${v.stockQuantity || 0}`)
+          .join("\n")}\n\nVui lòng nhập số lượng tồn kho hợp lệ (> 0).`
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.products.update(savedProduct.id, formData, currentUser);
+      await api.products.saveVariants(savedProduct.id, variants, currentUser);
+      alert("✅ Đã lưu toàn bộ sản phẩm và danh sách biến thể!");
+      onClose();
+    } catch (err: any) {
+      console.error("❌ [SAVE ERROR]", err);
+      alert(`❌ Lỗi lưu dữ liệu:\n${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveParent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -460,9 +540,18 @@ const ProductFormModal = ({
 
     setLoading(true);
     try {
+      // ✅ DEBUG: Check if imageUrls is being sent
+      console.log("🔍 FormData before save:", {
+        imageUrls: formData.imageUrls,
+        imageUrlsLength: formData.imageUrls?.length,
+        thumbnailUrl: formData.thumbnailUrl,
+      });
+
       let res;
       if (savedProduct) {
         res = await api.products.update(savedProduct.id, formData, currentUser);
+        // ✅ FIX: Preserve existing variants after update
+        res.variants = savedProduct.variants || [];
       } else {
         // ✅ FIX: Clean sizeGuideId before sending to API
         const cleanedData = {
@@ -474,9 +563,21 @@ const ProductFormModal = ({
         };
         res = await api.products.create(cleanedData, currentUser);
       }
+      console.log("✅ Save successful, updated product:", {
+        id: res.id,
+        imageUrls: res.imageUrls,
+        imageUrlsLength: res.imageUrls?.length,
+      });
       setSavedProduct(res);
+      // ✅ FIX: Notify parent of updated product
+      if (onSave) {
+        onSave(res);
+      }
       alert("Lưu thông tin sản phẩm thành công!");
-      setActiveTab("variants");
+      // ✅ FIX: Only auto-switch to variants tab when creating NEW product
+      if (!savedProduct) {
+        setActiveTab("variants");
+      }
     } catch (err: any) {
       console.error("Save product error:", err);
       alert("Lỗi: " + err.message);
@@ -513,49 +614,64 @@ const ProductFormModal = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 px-8 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-200 px-8 bg-white">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab("info")}
+              className={`px-8 py-4 font-black text-xs uppercase tracking-widest transition-all relative ${
+                activeTab === "info"
+                  ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <FileText size={16} /> Thông tin chung
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                if (!savedProduct) {
+                  alert(
+                    "Vui lòng lưu Thông tin chung trước khi quản lý biến thể."
+                  );
+                  return;
+                }
+                setActiveTab("variants");
+              }}
+              className={`px-8 py-4 font-black text-xs uppercase tracking-widest transition-all relative ${
+                activeTab === "variants"
+                  ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
+                  : "text-gray-400 hover:text-gray-600"
+              } ${!savedProduct ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              <div className="flex items-center gap-3">
+                <LayoutGrid size={16} /> Quản lý biến thể
+                {!savedProduct && <Lock size={12} className="ml-2" />}
+              </div>
+            </button>
+          </div>
+
+          {/* ✅ Submit button aligned with tabs - Show on both tabs when editing */}
           <button
-            onClick={() => setActiveTab("info")}
-            className={`px-8 py-4 font-black text-xs uppercase tracking-widest transition-all relative ${
-              activeTab === "info"
-                ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
+            onClick={savedProduct ? handleSaveEverything : handleSaveParent}
+            disabled={loading}
+            className="px-10 py-3.5 bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3 hover:from-black hover:to-slate-900 transition active:scale-95 text-xs disabled:opacity-50"
           >
-            <div className="flex items-center gap-3">
-              <FileText size={16} /> Thông tin chung
-            </div>
-          </button>
-          <button
-            onClick={() => {
-              if (!savedProduct) {
-                alert(
-                  "Vui lòng lưu Thông tin chung trước khi quản lý biến thể."
-                );
-                return;
-              }
-              setActiveTab("variants");
-            }}
-            className={`px-8 py-4 font-black text-xs uppercase tracking-widest transition-all relative ${
-              activeTab === "variants"
-                ? "text-secondary border-b-2 border-secondary bg-blue-50/30"
-                : "text-gray-400 hover:text-gray-600"
-            } ${!savedProduct ? "cursor-not-allowed opacity-50" : ""}`}
-          >
-            <div className="flex items-center gap-3">
-              <LayoutGrid size={16} /> Quản lý biến thể
-              {!savedProduct && <Lock size={12} className="ml-2" />}
-            </div>
+            {loading ? (
+              <RefreshCw className="animate-spin" size={16} />
+            ) : (
+              <>
+                <Save size={16} />
+                {savedProduct ? "CẬP NHẬT" : "LƯU"}
+              </>
+            )}
           </button>
         </div>
 
         {/* Modal Content - Scrollable */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
           {activeTab === "info" ? (
-            <form
-              onSubmit={handleSaveParent}
-              className="space-y-6 max-w-6xl mx-auto"
-            >
+            <div className="space-y-6 max-w-6xl mx-auto">
               {/* ✅ NEW: Use ProductFormTabs component */}
               <ProductFormTabs
                 formData={formData}
@@ -571,40 +687,14 @@ const ProductFormModal = ({
                 handleRemoveGalleryImage={handleRemoveGalleryImage}
                 loading={loading}
               />
-
-              {/* Submit Button */}
-              <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent pt-6 pb-2 -mx-8 px-8">
-                <div className="flex justify-end gap-4">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    disabled={loading}
-                    className="px-10 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold uppercase tracking-wider hover:bg-gray-200 transition text-xs disabled:opacity-50"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-12 py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 hover:from-black hover:to-slate-900 transition active:scale-95 text-xs disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <RefreshCw className="animate-spin" size={18} />
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        {savedProduct ? "CẬP NHẬT" : "LƯU & TẠO BIẾN THỂ"}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </form>
+            </div>
           ) : (
             <VariantManager
               product={savedProduct!}
               attributes={variantAttributes}
               parentFormData={formData}
+              variants={variants}
+              setVariants={setVariants}
               onSuccess={onClose}
             />
           )}
@@ -618,11 +708,15 @@ const VariantManager = ({
   product,
   attributes,
   parentFormData,
+  variants: externalVariants,
+  setVariants: setExternalVariants,
   onSuccess,
 }: {
   product: Product;
   attributes: ProductAttribute[];
   parentFormData: any;
+  variants: any[];
+  setVariants: (variants: any[]) => void;
   onSuccess: () => void;
 }) => {
   const { user: currentUser } = useAuth();
@@ -630,9 +724,9 @@ const VariantManager = ({
   const [chosenValues, setChosenValues] = useState<Record<string, string[]>>(
     {}
   );
-  const [variants, setVariants] = useState<ProductVariant[]>(
-    product.variants || []
-  );
+  // ✅ Use external variants state from parent
+  const variants = externalVariants;
+  const setVariants = setExternalVariants;
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [activeSelectorAttr, setActiveSelectorAttr] =
     useState<ProductAttribute | null>(null);
@@ -831,7 +925,7 @@ const VariantManager = ({
             onClick={() => setShowGenerateModal(true)}
             className="px-8 py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase shadow-xl hover:bg-black transition active:scale-95 flex items-center gap-3"
           >
-            <Wand2 size={16} /> Tự động sinh SKU
+            <Wand2 size={16} /> Tạo SKU
           </button>
         </div>
       </div>
@@ -1003,37 +1097,6 @@ const VariantManager = ({
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] w-full max-w-4xl px-4">
-        <div className="flex justify-between items-center gap-6 p-6 bg-slate-900 rounded-[32px] shadow-2xl border border-white/10 backdrop-blur-md">
-          <div className="hidden md:flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white shrink-0">
-              <Package size={24} />
-            </div>
-            <div>
-              <p className="text-xs font-black text-white uppercase">
-                Lưu toàn bộ thay đổi
-              </p>
-              <p className="text-[9px] text-gray-400 font-bold uppercase">
-                {variants.length} SKU biến thể hiện hữu
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleSaveEverything}
-            disabled={loading}
-            className="flex-1 md:flex-none px-12 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95 transition"
-          >
-            {loading ? (
-              <RefreshCw className="animate-spin" />
-            ) : (
-              <>
-                <ShieldCheck size={18} /> HOÀN TẤT & LƯU CƠ SỞ DỮ LIỆU
-              </>
-            )}
-          </button>
         </div>
       </div>
 
