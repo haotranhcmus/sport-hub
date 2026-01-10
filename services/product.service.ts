@@ -386,18 +386,6 @@ export const productService = {
       );
     }
 
-    // ✅ Validate stock quantity > 0
-    const invalidStock = variants.filter(
-      (v) => !v.stockQuantity || v.stockQuantity <= 0
-    );
-    if (invalidStock.length > 0) {
-      throw new Error(
-        `Tồn kho phải lớn hơn 0 cho các SKU: ${invalidStock
-          .map((v) => `${v.sku} (${v.stockQuantity || 0})`)
-          .join(", ")}`
-      );
-    }
-
     let successCount = 0;
     let errorMessages: string[] = [];
 

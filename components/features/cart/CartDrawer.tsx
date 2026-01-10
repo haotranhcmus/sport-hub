@@ -82,8 +82,9 @@ export const CartDrawer = () => {
           ) : (
             items.map((item: any) => {
               const price =
-                item.product.promotionalPrice || item.product.basePrice;
-              const finalPrice = price + item.variant.priceAdjustment;
+                item.product?.promotionalPrice || item.product?.basePrice || 0;
+              const priceAdjustment = item.variant?.priceAdjustment || 0;
+              const finalPrice = price + priceAdjustment;
 
               return (
                 <div

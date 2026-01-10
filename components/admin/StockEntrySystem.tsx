@@ -290,8 +290,9 @@ const StockEntryForm = ({ suppliers, products, onBack, onSaved }: any) => {
         },
       ]);
     }
-    setShowPicker(false);
-    setPickerSearch("");
+    // Don't close modal - allow multiple selections
+    // setShowPicker(false);
+    // setPickerSearch("");
   };
 
   const handleSubmit = async () => {
@@ -588,9 +589,18 @@ const StockEntryForm = ({ suppliers, products, onBack, onSaved }: any) => {
                 <div className="p-3 bg-secondary text-white rounded-2xl shadow-xl">
                   <Plus size={24} />
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-slate-800">
-                  Tìm chọn sản phẩm nhập
-                </h3>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-800">
+                    Tìm chọn sản phẩm nhập
+                  </h3>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">
+                    Đã chọn:{" "}
+                    <span className="text-secondary font-black">
+                      {items.length}
+                    </span>{" "}
+                    mặt hàng
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowPicker(false)}
@@ -666,26 +676,49 @@ const StockEntryForm = ({ suppliers, products, onBack, onSaved }: any) => {
                     </button>
                     {expandedProdId === p.id && (
                       <div className="bg-gray-50 p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-gray-100 animate-in slide-in-from-top-4">
-                        {p.variants.map((v) => (
-                          <button
-                            key={v.id}
-                            type="button"
-                            onClick={() => handleAddItem(p, v)}
-                            className="flex items-center justify-between p-4 bg-white rounded-2xl border-2 border-transparent hover:border-secondary hover:shadow-xl transition group text-left"
-                          >
-                            <div>
-                              <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">
-                                {v.color} / {v.size}
-                              </p>
-                              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
-                                SKU: {v.sku}
-                              </p>
-                            </div>
-                            <div className="w-8 h-8 bg-blue-50 text-secondary rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-50 group-hover:scale-100">
-                              <Plus size={16} strokeWidth={3} />
-                            </div>
-                          </button>
-                        ))}
+                        {p.variants.map((v) => {
+                          const isSelected = items.some(
+                            (i) => i.variantId === v.id
+                          );
+                          const selectedQty =
+                            items.find((i) => i.variantId === v.id)?.quantity ||
+                            0;
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => handleAddItem(p, v)}
+                              className={`flex items-center justify-between p-4 rounded-2xl border-2 transition group text-left ${
+                                isSelected
+                                  ? "bg-green-50 border-green-400 shadow-lg"
+                                  : "bg-white border-transparent hover:border-secondary hover:shadow-xl"
+                              }`}
+                            >
+                              <div>
+                                <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">
+                                  {v.color} / {v.size}
+                                </p>
+                                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
+                                  SKU: {v.sku}
+                                </p>
+                              </div>
+                              {isSelected ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-black text-green-600 bg-green-100 px-2 py-1 rounded-lg">
+                                    x{selectedQty}
+                                  </span>
+                                  <div className="w-8 h-8 bg-green-500 text-white rounded-lg flex items-center justify-center">
+                                    <CheckCircle2 size={16} />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="w-8 h-8 bg-blue-50 text-secondary rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-50 group-hover:scale-100">
+                                  <Plus size={16} strokeWidth={3} />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -701,10 +734,20 @@ const StockEntryForm = ({ suppliers, products, onBack, onSaved }: any) => {
                 </div>
               )}
             </div>
-            <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">
-                Hệ thống quản trị kho hàng SportHub Pro v3.5
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Đã chọn {items.length} mặt hàng •{" "}
+                {items.reduce((acc, i) => acc + (i.quantity || 0), 0)} sản phẩm
               </p>
+              <button
+                onClick={() => {
+                  setShowPicker(false);
+                  setPickerSearch("");
+                }}
+                className="px-8 py-3 bg-secondary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-600 transition flex items-center gap-2"
+              >
+                <CheckCircle2 size={16} /> Xong
+              </button>
             </div>
           </div>
         </div>

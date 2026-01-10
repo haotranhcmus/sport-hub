@@ -595,6 +595,48 @@ const inventoryService = {
       throw new Error(error.message);
     }
     console.log("✅ [STOCK ENTRY] Created:", code);
+
+    // 🔥 UPDATE STOCK QUANTITY FOR EACH VARIANT
+    if (entryData.items && entryData.items.length > 0) {
+      for (const item of entryData.items) {
+        if (item.variantId) {
+          try {
+            // Get current stock
+            const { data: variant } = await supabase
+              .from("ProductVariant")
+              .select("stockQuantity")
+              .eq("id", item.variantId)
+              .single();
+
+            if (variant) {
+              const newStock =
+                (variant.stockQuantity || 0) + (item.quantity || 0);
+              const { error: updateError } = await supabase
+                .from("ProductVariant")
+                .update({
+                  stockQuantity: newStock,
+                  updatedAt: now,
+                })
+                .eq("id", item.variantId);
+
+              if (updateError) {
+                console.error(
+                  `❌ [STOCK UPDATE] Error for variant ${item.variantId}:`,
+                  updateError
+                );
+              } else {
+                console.log(
+                  `✅ [STOCK UPDATE] Variant ${item.variantId}: ${variant.stockQuantity} -> ${newStock} (+${item.quantity})`
+                );
+              }
+            }
+          } catch (stockError: any) {
+            console.error(`❌ [STOCK UPDATE] Error:`, stockError.message);
+          }
+        }
+      }
+    }
+
     return data;
   },
   // ✅ Alias for consistency
@@ -641,6 +683,50 @@ const inventoryService = {
       throw new Error(error.message);
     }
     console.log("✅ [STOCK ISSUE] Created:", code);
+
+    // 🔥 UPDATE STOCK QUANTITY FOR EACH VARIANT (DECREASE)
+    if (issueData.items && issueData.items.length > 0) {
+      for (const item of issueData.items) {
+        if (item.variantId) {
+          try {
+            // Get current stock
+            const { data: variant } = await supabase
+              .from("ProductVariant")
+              .select("stockQuantity")
+              .eq("id", item.variantId)
+              .single();
+
+            if (variant) {
+              const newStock = Math.max(
+                0,
+                (variant.stockQuantity || 0) - (item.quantity || 0)
+              );
+              const { error: updateError } = await supabase
+                .from("ProductVariant")
+                .update({
+                  stockQuantity: newStock,
+                  updatedAt: now,
+                })
+                .eq("id", item.variantId);
+
+              if (updateError) {
+                console.error(
+                  `❌ [STOCK UPDATE] Error for variant ${item.variantId}:`,
+                  updateError
+                );
+              } else {
+                console.log(
+                  `✅ [STOCK UPDATE] Variant ${item.variantId}: ${variant.stockQuantity} -> ${newStock} (-${item.quantity})`
+                );
+              }
+            }
+          } catch (stockError: any) {
+            console.error(`❌ [STOCK UPDATE] Error:`, stockError.message);
+          }
+        }
+      }
+    }
+
     return data;
   },
   // ✅ Alias for consistency

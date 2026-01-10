@@ -489,19 +489,6 @@ const ProductFormModal = ({
       return;
     }
 
-    // Validate stock quantity > 0
-    const invalidStock = variants.filter(
-      (v) => !v.stockQuantity || v.stockQuantity <= 0
-    );
-    if (invalidStock.length > 0) {
-      alert(
-        `Tồn kho phải lớn hơn 0:\n${invalidStock
-          .map((v) => `${v.sku}: ${v.stockQuantity || 0}`)
-          .join("\n")}\n\nVui lòng nhập số lượng tồn kho hợp lệ (> 0).`
-      );
-      return;
-    }
-
     setLoading(true);
     try {
       await api.products.update(savedProduct.id, formData, currentUser);
@@ -815,7 +802,7 @@ const VariantManager = ({
           sku: `${product.productCode}-${colorCode}-${sizeCode}-${uniqueSuffix}`,
           color: color,
           size: size,
-          stockQuantity: 1,
+          stockQuantity: 0,
           priceAdjustment: 0,
           imageUrl: product.thumbnailUrl,
           status: "active",
@@ -877,19 +864,6 @@ const VariantManager = ({
         `SKU bị trùng lặp:\n${[...new Set(duplicates)].join(
           "\n"
         )}\n\nVui lòng chỉnh sửa SKU để đảm bảo tính duy nhất.`
-      );
-      return;
-    }
-
-    // ✅ Validate stock quantity > 0
-    const invalidStock = variants.filter(
-      (v) => !v.stockQuantity || v.stockQuantity <= 0
-    );
-    if (invalidStock.length > 0) {
-      alert(
-        `Tồn kho phải lớn hơn 0:\n${invalidStock
-          .map((v) => `${v.sku}: ${v.stockQuantity || 0}`)
-          .join("\n")}\n\nVui lòng nhập số lượng tồn kho hợp lệ (> 0).`
       );
       return;
     }
@@ -1016,13 +990,13 @@ const VariantManager = ({
                   <td className="px-6 py-5 text-center">
                     <input
                       type="number"
-                      min="1"
+                      min="0"
                       className="w-20 bg-white border border-gray-200 rounded-xl p-2.5 text-center font-black text-sm outline-none focus:ring-2 focus:ring-secondary/10 shadow-sm text-slate-900"
                       value={v.stockQuantity}
                       onChange={(e) => {
                         const newV = [...variants];
                         const value = parseInt(e.target.value);
-                        newV[i].stockQuantity = value > 0 ? value : 1;
+                        newV[i].stockQuantity = value >= 0 ? value : 0;
                         setVariants(newV);
                       }}
                     />

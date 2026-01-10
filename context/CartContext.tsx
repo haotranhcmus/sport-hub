@@ -173,6 +173,52 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     variant: ProductVariant,
     quantity: number
   ) => {
+    // ✅ Validate stock before adding to cart
+    const realProduct = latestProducts.find((p) => p.id === product.id);
+    const realVariant = realProduct?.variants?.find((v) => v.id === variant.id);
+
+    // Check if product/variant is available
+    if (
+      !realProduct ||
+      realProduct.status === ProductStatus.ARCHIVED ||
+      realProduct.status === ProductStatus.DRAFT
+    ) {
+      alert("❌ Sản phẩm này không còn kinh doanh.");
+      return;
+    }
+
+    if (!realVariant) {
+      alert("❌ Phân loại sản phẩm không tồn tại.");
+      return;
+    }
+
+    if (realVariant.stockQuantity === 0) {
+      alert(
+        `❌ Phân loại "${variant.color} / ${variant.size}" hiện đã hết hàng. Vui lòng chọn phân loại khác.`
+      );
+      return;
+    }
+
+    // Check if quantity exceeds stock
+    const existingItem = items.find((i) => i.variantId === variant.id);
+    const currentQtyInCart = existingItem?.quantity || 0;
+    const totalQty = currentQtyInCart + quantity;
+
+    if (totalQty > realVariant.stockQuantity) {
+      const canAdd = realVariant.stockQuantity - currentQtyInCart;
+      if (canAdd <= 0) {
+        alert(
+          `⚠️ Bạn đã có ${currentQtyInCart} sản phẩm này trong giỏ hàng.\nTồn kho hiện tại: ${realVariant.stockQuantity}`
+        );
+        setIsOpen(true);
+        return;
+      }
+      alert(
+        `⚠️ Chỉ có thể thêm ${canAdd} sản phẩm nữa (Tồn kho: ${realVariant.stockQuantity}, Trong giỏ: ${currentQtyInCart})`
+      );
+      quantity = canAdd;
+    }
+
     if (isAuthenticated && user) {
       // Use TanStack Query mutation with optimistic update (instant UI)
       addToCartMutation.mutate({ product, variant, quantity });
@@ -183,7 +229,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         if (existing) {
           return prev.map((i) =>
             i.variantId === variant.id
-              ? { ...i, quantity: i.quantity + quantity }
+              ? {
+                  ...i,
+                  quantity: Math.min(
+                    i.quantity + quantity,
+                    realVariant.stockQuantity
+                  ),
+                }
               : i
           );
         }
@@ -242,8 +294,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     () =>
       validatedItems.reduce((acc, item) => {
         if (!item.isAvailable) return acc;
-        const price = item.product.promotionalPrice || item.product.basePrice;
-        return acc + (price + item.variant.priceAdjustment) * item.quantity;
+        const price =
+          item.product?.promotionalPrice || item.product?.basePrice || 0;
+        const priceAdjustment = item.variant?.priceAdjustment || 0;
+        return acc + (price + priceAdjustment) * item.quantity;
       }, 0),
     [validatedItems]
   );
