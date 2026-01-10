@@ -298,6 +298,7 @@ export const CheckoutPage = () => {
       createdAt: new Date().toISOString(),
       items: items.map((i) => ({
         productId: i.product.id,
+        variantId: i.variantId, // ✅ Thêm variantId để track variant cụ thể
         productName: i.product.name,
         quantity: i.quantity,
         unitPrice: i.product.promotionalPrice || i.product.basePrice,

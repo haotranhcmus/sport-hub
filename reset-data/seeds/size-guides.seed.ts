@@ -8,7 +8,11 @@ export async function seedSizeGuides(prisma: PrismaClient) {
       id: "sg-giay",
       name: "Bảng Size Giày",
       description: "Hướng dẫn chọn size giày thể thao",
-      columns: ["Size", "Chiều dài bàn chân (cm)", "Phù hợp"],
+      columns: [
+        { key: "size", label: "Size" },
+        { key: "length", label: "Chiều dài bàn chân (cm)" },
+        { key: "fit", label: "Phù hợp" },
+      ],
       rows: [
         { size: "36", length: "23-23.5", fit: "Nữ XS" },
         { size: "37", length: "23.5-24", fit: "Nữ S" },
@@ -29,7 +33,11 @@ export async function seedSizeGuides(prisma: PrismaClient) {
       id: "sg-ao",
       name: "Bảng Size Áo",
       description: "Hướng dẫn chọn size áo thể thao",
-      columns: ["Size", "Chiều cao (cm)", "Cân nặng (kg)"],
+      columns: [
+        { key: "size", label: "Size" },
+        { key: "height", label: "Chiều cao (cm)" },
+        { key: "weight", label: "Cân nặng (kg)" },
+      ],
       rows: [
         { size: "XS", height: "150-160", weight: "40-50" },
         { size: "S", height: "155-165", weight: "45-55" },
@@ -46,7 +54,11 @@ export async function seedSizeGuides(prisma: PrismaClient) {
       id: "sg-quan",
       name: "Bảng Size Quần",
       description: "Hướng dẫn chọn size quần thể thao",
-      columns: ["Size", "Vòng eo (cm)", "Vòng mông (cm)"],
+      columns: [
+        { key: "size", label: "Size" },
+        { key: "waist", label: "Vòng eo (cm)" },
+        { key: "hip", label: "Vòng mông (cm)" },
+      ],
       rows: [
         { size: "XS", waist: "60-65", hip: "80-85" },
         { size: "S", waist: "65-70", hip: "85-90" },

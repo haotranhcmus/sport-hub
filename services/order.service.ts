@@ -240,10 +240,19 @@ export const orderService = {
         console.log("📦 [CANCEL ORDER] Hoàn kho cho đơn COD");
         // Hoàn từng item
         for (const item of order.items) {
+          // Chỉ hoàn kho nếu có variantId
+          if (!item.variantId) {
+            console.warn(
+              "⚠️ [CANCEL ORDER] Item không có variantId, bỏ qua:",
+              item.id
+            );
+            continue;
+          }
+
           const { error: stockError } = await supabase.rpc(
             "increment_variant_stock",
             {
-              variant_id: item.productId, // TODO: Cần lưu variantId
+              variant_id: item.variantId, // ✅ Sử dụng variantId thay vì productId
               quantity: item.quantity,
             }
           );

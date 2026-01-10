@@ -204,6 +204,7 @@ model OrderItem {
   id             String           @id @default(uuid())
   orderId        String
   productId      String
+  variantId      String?          // Thêm để track variant cụ thể
   productName    String
   quantity       Int
   unitPrice      Float
@@ -221,6 +222,7 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
   @@index([returnStatus])
 }
 

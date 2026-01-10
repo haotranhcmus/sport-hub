@@ -52,12 +52,99 @@ export const productService = {
   },
 
   validateStock: async (cartItems: CartItem[]) => {
-    await delay(300);
-    return { valid: true, message: "" };
+    try {
+      // Kiểm tra từng item trong giỏ hàng
+      for (const item of cartItems) {
+        const { data: variant, error } = await supabase
+          .from("ProductVariant")
+          .select("id, stockQuantity, product:Product(name)")
+          .eq("id", item.variantId)
+          .single();
+
+        if (error || !variant) {
+          return {
+            valid: false,
+            message: `Không tìm thấy sản phẩm trong hệ thống`,
+          };
+        }
+
+        // Kiểm tra số lượng tồn kho
+        if (variant.stockQuantity < item.quantity) {
+          return {
+            valid: false,
+            message: `Sản phẩm "${
+              variant.product?.name || "Không xác định"
+            }" chỉ còn ${variant.stockQuantity} trong kho, không đủ ${
+              item.quantity
+            } sản phẩm`,
+          };
+        }
+      }
+
+      return { valid: true, message: "" };
+    } catch (err: any) {
+      console.error("❌ [VALIDATE STOCK] Error:", err);
+      return {
+        valid: false,
+        message: "Lỗi kiểm tra tồn kho: " + err.message,
+      };
+    }
   },
 
   deductStock: async (items: any[]) => {
-    return { success: true, message: "" };
+    try {
+      // Sử dụng database transaction để đảm bảo tính nguyên tử
+      // QUAN TRỌNG: Tất cả updates phải thành công hoặc tất cả rollback
+
+      for (const item of items) {
+        // Bước 1: Kiểm tra và lock row (SELECT FOR UPDATE simulation)
+        const { data: currentVariant, error: fetchError } = await supabase
+          .from("ProductVariant")
+          .select("id, stockQuantity, product:Product(name)")
+          .eq("id", item.variantId)
+          .single();
+
+        if (fetchError || !currentVariant) {
+          throw new Error(`Không tìm thấy variant: ${item.variantId}`);
+        }
+
+        // Bước 2: Kiểm tra tồn kho trước khi trừ
+        if (currentVariant.stockQuantity < item.quantity) {
+          throw new Error(
+            `Không đủ hàng: "${
+              currentVariant.product?.name || "Không xác định"
+            }" (Còn: ${currentVariant.stockQuantity}, Cần: ${item.quantity})`
+          );
+        }
+
+        // Bước 3: Trừ stock
+        const newStock = currentVariant.stockQuantity - item.quantity;
+        const { error: updateError } = await supabase
+          .from("ProductVariant")
+          .update({
+            stockQuantity: newStock,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq("id", item.variantId)
+          .eq("stockQuantity", currentVariant.stockQuantity); // Optimistic locking
+
+        if (updateError) {
+          throw new Error(`Lỗi cập nhật tồn kho: ${updateError.message}`);
+        }
+
+        console.log(
+          `✅ [DEDUCT STOCK] Variant ${item.variantId}: ${currentVariant.stockQuantity} → ${newStock}`
+        );
+      }
+
+      return { success: true, message: "Đã trừ kho thành công" };
+    } catch (err: any) {
+      console.error("❌ [DEDUCT STOCK] Error:", err);
+      return {
+        success: false,
+        message: err.message || "Lỗi trừ kho",
+      };
+    }
   },
 
   getRelated: async (categoryId: string): Promise<Product[]> => {

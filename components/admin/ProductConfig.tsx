@@ -31,6 +31,7 @@ import { Category, Brand, ProductAttribute, SizeGuide } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import { InputField } from "./SharedUI";
 import { slugify } from "../../utils/helpers";
+import { uploadImage, replaceImage } from "../../lib/storage";
 
 // Helper: Đọc file sang Base64
 const handleFileRead = (file: File): Promise<string> => {
@@ -515,11 +516,48 @@ export const ProductConfigManager = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const base64 = await handleFileRead(file);
-      if (activeTab === "brand") setFormData({ ...formData, logoUrl: base64 });
-      else if (activeTab === "category")
-        setFormData({ ...formData, imageUrl: base64 });
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("⚠️ Chỉ chấp nhận file ảnh (JPG, PNG, WebP, ...)");
+      return;
+    }
+
+    // Validate file size (max 2MB for brands/categories)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("⚠️ Kích thước file quá lớn (tối đa 2MB)");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const folder = activeTab === "brand" ? "brands" : "categories";
+      console.log(`📷 [${activeTab.toUpperCase()}] Uploading image...`);
+
+      let imageUrl: string;
+      const oldUrl =
+        activeTab === "brand" ? formData.logoUrl : formData.imageUrl;
+
+      // If editing existing item with old image, replace it
+      if (editingItem && oldUrl) {
+        imageUrl = await replaceImage(oldUrl, file, folder);
+      } else {
+        imageUrl = await uploadImage(file, folder);
+      }
+
+      if (activeTab === "brand") {
+        setFormData({ ...formData, logoUrl: imageUrl });
+      } else if (activeTab === "category") {
+        setFormData({ ...formData, imageUrl: imageUrl });
+      }
+
+      console.log(`✅ [${activeTab.toUpperCase()}] Image uploaded:`, imageUrl);
+    } catch (error: any) {
+      console.error(`❌ [${activeTab.toUpperCase()}] Upload error:`, error);
+      alert("❌ Lỗi upload ảnh: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 

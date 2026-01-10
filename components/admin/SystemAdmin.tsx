@@ -116,7 +116,15 @@ export const AuditLogsView = () => {
                 </td>
                 <td className="px-6 py-6">
                   <span
-                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase bg-indigo-100 text-indigo-700`}
+                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${
+                      log.actionType === "CREATE"
+                        ? "bg-green-100 text-green-700"
+                        : log.actionType === "UPDATE"
+                        ? "bg-blue-100 text-blue-700"
+                        : log.actionType === "DELETE"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
                   >
                     {log.actionType}
                   </span>

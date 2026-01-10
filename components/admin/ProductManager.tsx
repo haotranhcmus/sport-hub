@@ -53,6 +53,7 @@ import {
   useAttributes,
   useSizeGuides,
 } from "../../hooks/useInventoryQuery";
+import { uploadImage, replaceImage } from "../../lib/storage";
 
 const handleFileRead = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -323,9 +324,41 @@ const ProductForm = ({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const base64 = await handleFileRead(file);
-      setFormData({ ...formData, thumbnailUrl: base64 });
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("⚠️ Chỉ chấp nhận file ảnh (JPG, PNG, WebP, ...)");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("⚠️ Kích thước file quá lớn (tối đa 5MB)");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log("📷 [PRODUCT] Uploading main image...");
+
+      let imageUrl: string;
+
+      // If updating existing product with old image, replace it
+      if (savedProduct && formData.thumbnailUrl) {
+        imageUrl = await replaceImage(formData.thumbnailUrl, file, "products");
+      } else {
+        // New upload
+        imageUrl = await uploadImage(file, "products");
+      }
+
+      setFormData({ ...formData, thumbnailUrl: imageUrl });
+      console.log("✅ [PRODUCT] Image uploaded:", imageUrl);
+    } catch (error: any) {
+      console.error("❌ [PRODUCT] Upload error:", error);
+      alert("❌ Lỗi upload ảnh: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -934,11 +967,36 @@ const VariantManager = ({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const base64 = await handleFileRead(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("⚠️ Chỉ chấp nhận file ảnh");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("⚠️ Kích thước file quá lớn (tối đa 5MB)");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log(`📷 [VARIANT] Uploading image for variant ${index}...`);
+
+      const imageUrl = await uploadImage(file, "variants");
+
       const newV = [...variants];
-      newV[index].imageUrl = base64;
+      newV[index].imageUrl = imageUrl;
       setVariants(newV);
+
+      console.log("✅ [VARIANT] Image uploaded:", imageUrl);
+    } catch (error: any) {
+      console.error("❌ [VARIANT] Upload error:", error);
+      alert("❌ Lỗi upload ảnh: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
