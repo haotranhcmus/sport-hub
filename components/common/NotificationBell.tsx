@@ -182,8 +182,8 @@ export const NotificationBell: React.FC<{
       style={{
         top: dropdownPosition.top,
         left: dropdownPosition.left,
-        maxHeight: 'calc(100vh - 120px)',
-        minWidth: '320px'
+        maxHeight: "calc(100vh - 120px)",
+        minWidth: "320px",
       }}
     >
       {/* Header */}

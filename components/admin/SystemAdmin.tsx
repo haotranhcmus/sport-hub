@@ -400,7 +400,8 @@ export const SystemConfigManager = () => {
       await api.system.updateConfig(config, currentUser);
       showNotification("success", "Cập nhật cấu hình thành công!");
     } catch (err: any) {
-      const errorMessage = err?.message || JSON.stringify(err) || "Lỗi không xác định";
+      const errorMessage =
+        err?.message || JSON.stringify(err) || "Lỗi không xác định";
       console.error("[SystemConfig] Lỗi lưu cấu hình:", err);
       showNotification("error", `Lỗi lưu cấu hình: ${errorMessage}`);
     } finally {
