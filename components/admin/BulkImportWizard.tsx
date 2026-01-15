@@ -146,7 +146,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
     console.log("[BulkImport] Category slugs:", Array.from(map.keys()));
     return map;
   }, [categories]);
-  
+
   const brandMap = useMemo(() => {
     const map = new Map(brands.map((b) => [b.slug, b]));
     console.log("[BulkImport] Brands loaded:", brands.length);
@@ -208,12 +208,21 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
       const products: ProductImportRow[] = [];
       const variants: VariantImportRow[] = [];
       const productCodes = new Set<string>();
-      
+
       console.log("[BulkImport] Validating products:", rawProducts.length);
       if (rawProducts.length > 0) {
-        console.log("[BulkImport] First row keys:", Object.keys(rawProducts[0]));
-        console.log("[BulkImport] First row categorySlug:", rawProducts[0].categorySlug);
-        console.log("[BulkImport] First row brandSlug:", rawProducts[0].brandSlug);
+        console.log(
+          "[BulkImport] First row keys:",
+          Object.keys(rawProducts[0])
+        );
+        console.log(
+          "[BulkImport] First row categorySlug:",
+          rawProducts[0].categorySlug
+        );
+        console.log(
+          "[BulkImport] First row brandSlug:",
+          rawProducts[0].brandSlug
+        );
       }
 
       // Validate products
@@ -583,27 +592,45 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                 <li>• URL ảnh phải là đường dẫn công khai có thể truy cập</li>
               </ul>
             </div>
-            
+
             {/* Available Slugs Reference */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-2xl p-4">
-                <h5 className="font-bold text-gray-700 text-sm mb-2">📁 categorySlug có sẵn:</h5>
+                <h5 className="font-bold text-gray-700 text-sm mb-2">
+                  📁 categorySlug có sẵn:
+                </h5>
                 <div className="flex flex-wrap gap-1">
-                  {categories.length > 0 ? categories.map(c => (
-                    <code key={c.id} className="text-xs bg-white px-2 py-1 rounded border text-blue-600">
-                      {c.slug}
-                    </code>
-                  )) : <span className="text-xs text-gray-400">Đang tải...</span>}
+                  {categories.length > 0 ? (
+                    categories.map((c) => (
+                      <code
+                        key={c.id}
+                        className="text-xs bg-white px-2 py-1 rounded border text-blue-600"
+                      >
+                        {c.slug}
+                      </code>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-400">Đang tải...</span>
+                  )}
                 </div>
               </div>
               <div className="bg-gray-50 rounded-2xl p-4">
-                <h5 className="font-bold text-gray-700 text-sm mb-2">🏷️ brandSlug có sẵn:</h5>
+                <h5 className="font-bold text-gray-700 text-sm mb-2">
+                  🏷️ brandSlug có sẵn:
+                </h5>
                 <div className="flex flex-wrap gap-1">
-                  {brands.length > 0 ? brands.map(b => (
-                    <code key={b.id} className="text-xs bg-white px-2 py-1 rounded border text-green-600">
-                      {b.slug}
-                    </code>
-                  )) : <span className="text-xs text-gray-400">Đang tải...</span>}
+                  {brands.length > 0 ? (
+                    brands.map((b) => (
+                      <code
+                        key={b.id}
+                        className="text-xs bg-white px-2 py-1 rounded border text-green-600"
+                      >
+                        {b.slug}
+                      </code>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-400">Đang tải...</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -762,9 +789,13 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                               {product.brandSlug}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                {variantCount}
-                              </span>
+                              {variantCount > 0 ? (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                  {variantCount}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-xs">-</span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -871,7 +902,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] backdrop-blur-sm">
       <div className="bg-gray-50 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
         <div className="bg-white px-8 py-6 border-b flex items-center justify-between">

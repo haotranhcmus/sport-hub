@@ -200,31 +200,56 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
     (order.paymentStatus === "PAID" ||
       order.paymentStatus === "PENDING_REFUND");
 
+  // Get status step for timeline
+  const getStatusStep = (status: OrderStatus) => {
+    switch (status) {
+      case OrderStatus.PENDING_PAYMENT:
+      case OrderStatus.PENDING_CONFIRMATION:
+        return 1;
+      case OrderStatus.PACKING:
+        return 2;
+      case OrderStatus.SHIPPING:
+        return 3;
+      case OrderStatus.COMPLETED:
+        return 4;
+      case OrderStatus.CANCELLED:
+      case OrderStatus.DELIVERY_FAILED:
+        return -1;
+      default:
+        return 1;
+    }
+  };
+
+  const currentStep = getStatusStep(order.status);
+  const isCancelled =
+    order.status === OrderStatus.CANCELLED ||
+    order.status === OrderStatus.DELIVERY_FAILED;
+
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 backdrop-blur-md bg-black/60 animate-in fade-in">
-      <div className="bg-white rounded-[40px] w-[95vw] max-w-[1800px] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95">
-        {/* Header */}
-        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <div className="flex items-center gap-6">
-            <div className="p-4 bg-slate-900 text-white rounded-3xl shadow-xl">
-              <Package size={28} />
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 animate-in fade-in">
+      <div className="bg-gray-100 rounded-lg w-[95vw] max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95">
+        {/* Shopee-style Header */}
+        <div className="bg-white px-6 py-4 border-b flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-orange-50 text-orange-500 rounded-lg">
+              <Package size={24} />
             </div>
             <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-black uppercase tracking-tight text-slate-800">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-800">
                   {order.orderCode}
                 </h2>
                 <span
-                  className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${
                     isGuest
-                      ? "bg-orange-500 text-white"
-                      : "bg-blue-600 text-white"
+                      ? "bg-orange-100 text-orange-600"
+                      : "bg-blue-100 text-blue-600"
                   }`}
                 >
                   {isGuest ? "Khách vãng lai" : "Thành viên"}
                 </span>
               </div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+              <p className="text-xs text-gray-400 mt-0.5">
                 Ngày đặt: {new Date(order.createdAt).toLocaleString("vi-VN")}
               </p>
             </div>
@@ -232,134 +257,119 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
           <button
             onClick={onClose}
             disabled={loading}
-            className="p-3 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-2xl transition disabled:opacity-30"
+            className="p-2 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-lg transition"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* Cột trái */}
-            <div className="lg:col-span-8 space-y-8">
-              {/* Status Banner */}
-              <div
-                className={`${statusUI.bg} ${statusUI.color} p-8 rounded-[32px] border border-current/10 flex items-center justify-between relative overflow-hidden`}
-              >
-                <div className="relative z-10">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                    Trạng thái vận hành
-                  </p>
-                  <h3 className="text-3xl font-black uppercase tracking-tight mt-1">
-                    {statusUI.label}
-                  </h3>
-                  {/* Fix shorthand S4 to SHIPPING */}
-                  {order.status === OrderStatus.SHIPPING &&
-                    order.trackingNumber && (
-                      <div className="mt-4 flex flex-col gap-2 bg-white/20 p-4 rounded-2xl border border-white/30 backdrop-blur-sm">
-                        <div className="flex items-center gap-4">
-                          <Truck size={20} />
-                          <div>
-                            <p className="text-[10px] font-black uppercase opacity-60">
-                              Đơn vị: {order.courierName}
-                            </p>
-                            <p className="text-sm font-black uppercase">
-                              Vận đơn: {order.trackingNumber}
-                            </p>
-                          </div>
-                        </div>
-                        {order.deliveryPerson && (
-                          <div className="flex items-center gap-4 border-t border-white/10 pt-2">
-                            <User size={16} />
-                            <p className="text-[10px] font-black uppercase">
-                              Người giao: {order.deliveryPerson}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-                <ShieldCheck
-                  size={120}
-                  className="absolute -right-8 -bottom-8 opacity-10 rotate-12"
-                />
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {/* Status Banner - Shopee style */}
+          <div
+            className={`rounded-lg p-6 ${
+              isCancelled
+                ? "bg-red-50 border border-red-100"
+                : "bg-gradient-to-r from-orange-50 to-orange-100/50"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">
+                  TRẠNG THÁI VẬN HÀNH
+                </p>
+                <h3
+                  className={`text-2xl font-bold ${
+                    isCancelled ? "text-red-600" : "text-orange-600"
+                  }`}
+                >
+                  {statusUI.label}
+                </h3>
               </div>
+              {order.status === OrderStatus.SHIPPING &&
+                order.trackingNumber && (
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      Đơn vị: {order.courierName}
+                    </p>
+                    <p className="text-sm font-medium text-gray-700">
+                      Mã vận đơn: {order.trackingNumber}
+                    </p>
+                    {order.deliveryPerson && (
+                      <p className="text-xs text-gray-500">
+                        Người giao: {order.deliveryPerson}
+                      </p>
+                    )}
+                  </div>
+                )}
+            </div>
+          </div>
 
-              {/* Refund Information Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Left Column */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Refund Section */}
               {needsRefund && order.returnInfo?.bankInfo && (
-                <div className="bg-red-50 p-8 rounded-[32px] border-2 border-dashed border-red-200 space-y-6 animate-pulse-slow">
-                  <div className="flex items-center gap-4 text-red-600">
-                    <div className="p-3 bg-red-600 text-white rounded-2xl shadow-lg">
-                      <RotateCcw size={24} />
+                <div className="bg-white rounded-lg border border-red-200 overflow-hidden">
+                  <div className="bg-red-50 px-5 py-3 border-b border-red-100 flex items-center gap-2">
+                    <RotateCcw size={16} className="text-red-500" />
+                    <span className="font-medium text-red-700">
+                      Yêu cầu hoàn tiền (Thanh toán Online)
+                    </span>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Ngân hàng</p>
+                        <p className="font-medium text-gray-800">
+                          {order.returnInfo.bankInfo.bankName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">
+                          Chủ tài khoản
+                        </p>
+                        <p className="font-medium text-gray-800">
+                          {order.returnInfo.bankInfo.accountHolder}
+                        </p>
+                      </div>
                     </div>
                     <div>
-                      <h4 className="text-lg font-black uppercase tracking-tight">
-                        Yêu cầu hoàn tiền (ONLINE)
-                      </h4>
-                      <p className="text-[10px] font-bold uppercase opacity-70">
-                        Khách hàng đã hủy đơn và cần nhận lại tiền
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-5 rounded-2xl border border-red-100 space-y-2">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        Ngân hàng
-                      </p>
-                      <p className="font-black text-slate-800 uppercase">
-                        {order.returnInfo.bankInfo.bankName}
-                      </p>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-red-100 space-y-2">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        Chủ tài khoản
-                      </p>
-                      <p className="font-black text-slate-800 uppercase">
-                        {order.returnInfo.bankInfo.accountHolder}
-                      </p>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-red-100 space-y-2 md:col-span-2">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        Số tài khoản
-                      </p>
-                      <p className="text-2xl font-black text-secondary tracking-[0.2em]">
+                      <p className="text-xs text-gray-400 mb-1">Số tài khoản</p>
+                      <p className="text-xl font-bold text-orange-600 tracking-wider">
                         {order.returnInfo.bankInfo.accountNumber}
                       </p>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-4 bg-white/50 rounded-2xl text-red-700">
-                    <AlertTriangle size={20} className="shrink-0" />
-                    <p className="text-[11px] font-bold leading-relaxed uppercase">
-                      Vui lòng thực hiện chuyển khoản hoàn tiền:{" "}
-                      <span className="font-black text-red-600">
-                        {order.totalAmount.toLocaleString()}đ
-                      </span>{" "}
-                      trước khi nhấn xác nhận.
-                    </p>
+                    <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg text-orange-700">
+                      <AlertTriangle size={16} />
+                      <p className="text-xs">
+                        Hoàn tiền:{" "}
+                        <strong>₫{order.totalAmount.toLocaleString()}</strong>
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Products Table */}
-              <div className="bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
-                  <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 flex items-center gap-3">
-                    <ClipboardCheck size={16} className="text-secondary" /> Danh
-                    mục hàng hóa
-                  </h4>
-                  <span className="text-[10px] font-black text-gray-400 uppercase">
+              {/* Products Section */}
+              <div className="bg-white rounded-lg overflow-hidden">
+                <div className="px-5 py-3 border-b flex justify-between items-center bg-gray-50">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <ClipboardCheck size={16} className="text-orange-500" />
+                    <span className="text-sm font-medium">
+                      DANH MỤC HÀNG HÓA
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400">
                     {order.items.length} mặt hàng
                   </span>
                 </div>
-                <div className="p-0 divide-y divide-gray-50">
+                <div className="divide-y">
                   {order.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-6 flex items-center gap-6 hover:bg-gray-50/50 transition"
+                      className="p-4 flex items-center gap-4 hover:bg-gray-50 transition"
                     >
-                      <div className="w-16 h-16 bg-white border border-gray-100 rounded-xl p-1 flex-shrink-0">
+                      <div className="w-16 h-16 bg-gray-50 border rounded overflow-hidden flex-shrink-0">
                         <img
                           src={
                             item.thumbnailUrl || "https://picsum.photos/200/200"
@@ -368,104 +378,108 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
                           alt=""
                         />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-black text-sm uppercase text-slate-800">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 text-sm">
                           {item.productName}
                         </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">
+                        <p className="text-xs text-gray-400 mt-1">
                           Màu:{" "}
-                          <span className="text-secondary">
+                          <span className="text-orange-500">
                             {item.color || "N/A"}
                           </span>{" "}
                           • Size:{" "}
-                          <span className="text-primary">
+                          <span className="text-blue-500">
                             {item.size || "N/A"}
                           </span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-slate-800">
-                          {item.unitPrice.toLocaleString()}đ
+                        <p className="font-medium text-gray-800">
+                          ₫{item.unitPrice.toLocaleString()}
                         </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">
-                          x {item.quantity}
+                        <p className="text-xs text-gray-400">
+                          x{item.quantity}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="p-8 bg-slate-50 border-t border-gray-100 flex justify-between items-end">
-                  <div className="text-right ml-auto">
-                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">
-                      Tổng cộng thanh toán
-                    </p>
-                    <p className="text-4xl font-black text-red-600 tracking-tighter">
-                      {order.totalAmount.toLocaleString()}đ
-                    </p>
-                  </div>
+                {/* Total */}
+                <div className="px-5 py-4 bg-gray-50 border-t flex justify-end items-center gap-4">
+                  <span className="text-sm text-gray-500">
+                    TỔNG CỘNG THANH TOÁN
+                  </span>
+                  <span className="text-2xl font-bold text-orange-600">
+                    ₫{order.totalAmount.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Cột phải */}
-            <div className="lg:col-span-4 space-y-8">
-              <div className="bg-white p-8 rounded-[32px] border border-gray-100 space-y-8 shadow-sm">
-                <div>
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-3 mb-6">
-                    <MapPin size={18} className="text-secondary" /> Thông tin
-                    giao nhận
-                  </h4>
-                  <div className="space-y-4">
-                    <p className="font-black text-slate-800 uppercase text-lg leading-tight">
-                      {order.customerName}
-                    </p>
-                    <p className="font-black text-slate-800 flex items-center gap-2">
-                      <Smartphone size={16} className="text-gray-300" />{" "}
-                      {order.customerPhone}
-                    </p>
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs font-bold text-gray-600 leading-relaxed shadow-inner">
-                      {order.customerAddress}
-                    </div>
+            {/* Right Column */}
+            <div className="space-y-4">
+              {/* Customer Info */}
+              <div className="bg-white rounded-lg p-5 space-y-4">
+                <div className="flex items-center gap-2 text-gray-500 pb-3 border-b">
+                  <MapPin size={16} className="text-orange-500" />
+                  <span className="text-sm font-medium">
+                    THÔNG TIN GIAO NHẬN
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <p className="font-bold text-gray-800">
+                    {order.customerName}
+                  </p>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Smartphone size={14} className="text-gray-400" />
+                    <span className="text-sm">{order.customerPhone}</span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 border">
+                    {order.customerAddress}
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-8 border-t border-gray-100">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-3 mb-6">
-                    <CreditCard size={18} className="text-secondary" /> Thanh
-                    toán
-                  </h4>
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase text-slate-700">
-                      {order.paymentMethod === "COD"
-                        ? "Thanh toán COD"
-                        : "Thanh toán Online"}
-                    </p>
-                    <div
-                      className={`px-4 py-2 rounded-xl inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
-                        order.paymentStatus === "PAID"
-                          ? "bg-green-100 text-green-700"
-                          : order.paymentStatus === "PENDING_REFUND"
-                          ? "bg-orange-100 text-orange-700"
-                          : order.paymentStatus === "REFUNDED"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-red-50 text-red-600"
-                      }`}
-                    >
-                      {order.paymentStatus === "PAID" ? (
-                        <CheckCircle size={14} />
-                      ) : order.paymentStatus === "REFUNDED" ? (
-                        <CheckCircle2 size={14} />
-                      ) : (
-                        <Clock size={14} />
-                      )}
-                      {order.paymentStatus === "PAID"
-                        ? "Đã thanh toán"
+              {/* Payment Info */}
+              <div className="bg-white rounded-lg p-5 space-y-4">
+                <div className="flex items-center gap-2 text-gray-500 pb-3 border-b">
+                  <CreditCard size={16} className="text-orange-500" />
+                  <span className="text-sm font-medium">THANH TOÁN</span>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    {order.paymentMethod === "COD"
+                      ? "THANH TOÁN COD"
+                      : "THANH TOÁN ONLINE"}
+                  </p>
+                  <div
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium ${
+                      order.paymentStatus === "PAID"
+                        ? "bg-green-50 text-green-600"
                         : order.paymentStatus === "PENDING_REFUND"
-                        ? "Chờ hoàn tiền"
+                        ? "bg-orange-50 text-orange-600"
                         : order.paymentStatus === "REFUNDED"
-                        ? "Đã hoàn tiền"
-                        : "Chưa thanh toán"}
-                    </div>
+                        ? "bg-blue-50 text-blue-600"
+                        : "bg-red-50 text-red-600"
+                    }`}
+                  >
+                    {order.paymentStatus === "PAID" ? (
+                      <>
+                        <CheckCircle size={12} /> ĐÃ THANH TOÁN
+                      </>
+                    ) : order.paymentStatus === "REFUNDED" ? (
+                      <>
+                        <CheckCircle2 size={12} /> ĐÃ HOÀN TIỀN
+                      </>
+                    ) : order.paymentStatus === "PENDING_REFUND" ? (
+                      <>
+                        <Clock size={12} /> CHỜ HOÀN TIỀN
+                      </>
+                    ) : (
+                      <>
+                        <Clock size={12} /> CHƯA THANH TOÁN
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -473,87 +487,77 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-8 bg-gray-50 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3 text-slate-400">
-            <ShieldCheck size={20} />
-            <p className="text-[10px] font-black uppercase tracking-widest">
-              Hệ thống CSKH SportHub Pro v3.5
-            </p>
+        {/* Footer Actions - Shopee style */}
+        <div className="bg-white border-t px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2 text-gray-400">
+            <ShieldCheck size={16} />
+            <span className="text-xs">HỆ THỐNG CSKH SPORTHUB PRO V3.5</span>
           </div>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-3">
             {needsRefund && (
               <button
                 onClick={() => setShowRefundConfirm(true)}
                 disabled={loading}
-                className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:bg-orange-700 transition active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-orange-500 text-white rounded font-medium text-sm hover:bg-orange-600 transition flex items-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
                   <>
-                    <CheckCircle2 size={16} /> XÁC NHẬN ĐÃ HOÀN TIỀN
+                    <CheckCircle2 size={14} /> XÁC NHẬN ĐÃ HOÀN TIỀN
                   </>
                 )}
               </button>
             )}
 
-            {/* Fix shorthand OrderStatus members S1, S2 */}
             {(order.status === OrderStatus.PENDING_PAYMENT ||
               order.status === OrderStatus.PENDING_CONFIRMATION) && (
               <button
                 onClick={() => setShowCancelForm(true)}
                 disabled={loading}
-                className="px-6 py-4 bg-white border border-red-100 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition disabled:opacity-50"
+                className="px-5 py-2.5 border border-red-200 text-red-500 rounded font-medium text-sm hover:bg-red-50 transition disabled:opacity-50"
               >
-                {loading ? (
-                  <RefreshCw className="animate-spin" size={14} />
-                ) : (
-                  "HỦY ĐƠN HÀNG"
-                )}
+                HỦY ĐƠN HÀNG
               </button>
             )}
 
-            {/* Fix shorthand S2 to PENDING_CONFIRMATION */}
             {order.status === OrderStatus.PENDING_CONFIRMATION && (
               <button
                 onClick={() => setShowApproveConfirm(true)}
                 disabled={loading}
-                className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-blue-500 text-white rounded font-medium text-sm hover:bg-blue-600 transition flex items-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
                   <>
-                    <CheckCircle size={16} /> DUYỆT ĐƠN & ĐÓNG GÓI
+                    <CheckCircle size={14} /> DUYỆT ĐƠN & ĐÓNG GÓI
                   </>
                 )}
               </button>
             )}
 
-            {/* Fix shorthand S3 to PACKING */}
             {order.status === OrderStatus.PACKING && (
               <button
                 onClick={() => setShowHandoverModal(true)}
                 disabled={loading}
-                className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-indigo-500 text-white rounded font-medium text-sm hover:bg-indigo-600 transition flex items-center gap-2 disabled:opacity-50"
               >
-                <Send size={16} /> BÀN GIAO VẬN CHUYỂN
+                <Send size={14} /> BÀN GIAO VẬN CHUYỂN
               </button>
             )}
 
-            {/* Fix shorthand S4 to SHIPPING */}
             {order.status === OrderStatus.SHIPPING && (
               <button
                 onClick={() => setShowSuccessConfirm(true)}
                 disabled={loading}
-                className="px-10 py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-green-500/20 hover:bg-green-700 transition active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-green-500 text-white rounded font-medium text-sm hover:bg-green-600 transition flex items-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
                   <>
-                    <CheckCircle size={16} /> GIAO THÀNH CÔNG
+                    <CheckCircle size={14} /> GIAO THÀNH CÔNG
                   </>
                 )}
               </button>
@@ -561,44 +565,44 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
 
             <button
               onClick={onClose}
-              className="px-8 py-4 bg-white border border-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 transition"
+              className="px-5 py-2.5 border border-gray-200 text-gray-500 rounded font-medium text-sm hover:bg-gray-50 transition"
             >
-              Đóng
+              ĐÓNG
             </button>
           </div>
         </div>
       </div>
 
-      {/* Refund Confirmation Modal */}
+      {/* Refund Confirmation Modal - Shopee style */}
       {showRefundConfirm && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 backdrop-blur-md bg-black/40 animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-10 animate-in zoom-in-95 text-center">
-            <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Banknote size={48} />
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 text-center">
+            <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Banknote size={32} />
             </div>
-            <h3 className="text-2xl font-black uppercase text-slate-800 tracking-tight mb-2">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
               Xác nhận hoàn tiền?
             </h3>
-            <p className="text-sm text-gray-500 mb-8 font-medium">
+            <p className="text-sm text-gray-500 mb-6">
               Hành động này xác nhận bạn đã chuyển tiền thành công cho khách
-              hàng theo thông tin ngân hàng được cung cấp.
+              hàng.
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowRefundConfirm(false)}
-                className="py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition"
+                className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded font-medium text-sm hover:bg-gray-200 transition"
               >
                 Quay lại
               </button>
               <button
                 onClick={handleConfirmRefund}
                 disabled={loading}
-                className="py-4 bg-orange-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-orange-500 text-white rounded font-medium text-sm hover:bg-orange-600 transition flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
-                  "XÁC NHẬN HOÀN TIỀN"
+                  "Xác nhận"
                 )}
               </button>
             </div>
@@ -606,35 +610,35 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Custom Approve Confirmation Modal */}
+      {/* Approve Confirmation Modal - Shopee style */}
       {showApproveConfirm && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 backdrop-blur-md bg-black/40 animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-10 animate-in zoom-in-95 text-center">
-            <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle size={48} />
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 text-center">
+            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle size={32} />
             </div>
-            <h3 className="text-2xl font-black uppercase text-slate-800 tracking-tight mb-2">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
               Duyệt đơn hàng?
             </h3>
-            <p className="text-sm text-gray-500 mb-8 font-medium">
+            <p className="text-sm text-gray-500 mb-6">
               Trạng thái đơn sẽ được chuyển sang "Đang đóng gói".
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowApproveConfirm(false)}
-                className="py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition"
+                className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded font-medium text-sm hover:bg-gray-200 transition"
               >
                 Quay lại
               </button>
               <button
                 onClick={handleApprove}
                 disabled={loading}
-                className="py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-blue-500 text-white rounded font-medium text-sm hover:bg-blue-600 transition flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
-                  "XÁC NHẬN DUYỆT"
+                  "Xác nhận duyệt"
                 )}
               </button>
             </div>
@@ -642,36 +646,36 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Custom Success Delivery Confirmation Modal */}
+      {/* Success Delivery Confirmation Modal - Shopee style */}
       {showSuccessConfirm && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 backdrop-blur-md bg-black/40 animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-10 animate-in zoom-in-95 text-center">
-            <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 size={48} />
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 text-center">
+            <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={32} />
             </div>
-            <h3 className="text-2xl font-black uppercase text-slate-800 tracking-tight mb-2">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
               Giao hàng thành công?
             </h3>
-            <p className="text-sm text-gray-500 mb-8 font-medium">
+            <p className="text-sm text-gray-500 mb-6">
               Xác nhận khách đã nhận hàng. Đơn hàng sẽ chuyển sang trạng thái
               "Hoàn tất".
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowSuccessConfirm(false)}
-                className="py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition"
+                className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded font-medium text-sm hover:bg-gray-200 transition"
               >
                 Quay lại
               </button>
               <button
                 onClick={handleSuccessDelivery}
                 disabled={loading}
-                className="py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-green-500/20 hover:bg-green-700 transition flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-green-500 text-white rounded font-medium text-sm hover:bg-green-600 transition flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
-                  "XÁC NHẬN HOÀN TẤT"
+                  "Xác nhận hoàn tất"
                 )}
               </button>
             </div>
@@ -679,50 +683,48 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Custom Cancel Form Modal */}
+      {/* Cancel Form Modal - Shopee style */}
       {showCancelForm && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 backdrop-blur-md bg-black/40 animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-10 animate-in zoom-in-95">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <AlertOctagon size={32} />
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-md shadow-xl p-6 animate-in zoom-in-95">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                <AlertOctagon size={28} />
               </div>
-              <h3 className="text-xl font-black uppercase text-slate-800 tracking-tight">
-                Hủy đơn hàng
-              </h3>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+              <h3 className="text-lg font-bold text-gray-800">Hủy đơn hàng</h3>
+              <p className="text-xs text-gray-400 mt-1">
                 Hành động này không thể hoàn tác
               </p>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Lý do hủy đơn *
                 </label>
                 <textarea
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-medium text-sm outline-none focus:ring-2 focus:ring-red-500/10 h-32"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 h-24 resize-none"
                   placeholder="Nhập lý do hủy đơn..."
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-10">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowCancelForm(false)}
-                className="py-4 font-black text-gray-400 uppercase text-[10px] tracking-widest"
+                className="flex-1 py-2.5 text-gray-500 font-medium text-sm hover:bg-gray-50 rounded transition"
               >
                 Đóng
               </button>
               <button
                 onClick={handleCancelOrder}
                 disabled={loading || !cancelReason.trim()}
-                className="py-4 bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-red-700 transition disabled:opacity-50"
+                className="flex-1 py-2.5 bg-red-500 text-white rounded font-medium text-sm hover:bg-red-600 transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
-                  "XÁC NHẬN HỦY"
+                  "Xác nhận hủy"
                 )}
               </button>
             </div>
@@ -730,26 +732,26 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Handover Modal */}
+      {/* Handover Modal - Shopee style */}
       {showHandoverModal && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 backdrop-blur-md bg-black/40 animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-lg shadow-2xl p-10 animate-in zoom-in-95">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Truck size={32} />
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-lg shadow-xl p-6 animate-in zoom-in-95">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Truck size={28} />
               </div>
-              <h3 className="text-xl font-black uppercase text-slate-800 tracking-tight">
-                Bàn giao Shipper
+              <h3 className="text-lg font-bold text-gray-800">
+                Bàn giao vận chuyển
               </h3>
             </div>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
                     Đơn vị vận chuyển *
                   </label>
                   <select
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-black text-sm outline-none focus:ring-2 focus:ring-indigo-500/10"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-orange-500"
                     value={handoverForm.courierName}
                     onChange={(e) =>
                       setHandoverForm({
@@ -769,13 +771,13 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
                     Nhân viên giao hàng *
                   </label>
                   <input
                     type="text"
                     placeholder="Tên nhân viên..."
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-black text-sm outline-none focus:ring-2 focus:ring-indigo-500/10"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-orange-500"
                     value={handoverForm.deliveryPerson}
                     onChange={(e) =>
                       setHandoverForm({
@@ -787,13 +789,13 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Mã vận đơn *
                 </label>
                 <input
                   type="text"
                   placeholder="Nhập mã vận đơn..."
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-black text-sm outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-orange-500"
                   value={handoverForm.trackingNumber}
                   onChange={(e) =>
                     setHandoverForm({
@@ -804,22 +806,22 @@ export const AdminOrderDetailModal: React.FC<Props> = ({
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-10">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowHandoverModal(false)}
-                className="py-4 font-black text-gray-400 uppercase text-[10px] tracking-widest"
+                className="flex-1 py-2.5 text-gray-500 font-medium text-sm hover:bg-gray-50 rounded transition"
               >
                 Hủy
               </button>
               <button
                 onClick={handleHandoverConfirm}
                 disabled={loading}
-                className="py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-black transition"
+                className="flex-1 py-2.5 bg-indigo-500 text-white rounded font-medium text-sm hover:bg-indigo-600 transition flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={14} />
                 ) : (
-                  "XÁC NHẬN"
+                  "Xác nhận"
                 )}
               </button>
             </div>

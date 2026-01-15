@@ -27,7 +27,7 @@ import {
 } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import { StatCard, InputField, TabButton } from "./SharedUI";
-import { uploadImage } from "../../lib/storage";
+import { uploadImage, deleteImage } from "../../lib/storage";
 
 export const AuditLogsView = () => {
   const [logs, setLogs] = useState<SystemLog[]>([]);
@@ -399,8 +399,10 @@ export const SystemConfigManager = () => {
     try {
       await api.system.updateConfig(config, currentUser);
       showNotification("success", "Cập nhật cấu hình thành công!");
-    } catch (err) {
-      showNotification("error", "Lỗi lưu cấu hình");
+    } catch (err: any) {
+      const errorMessage = err?.message || JSON.stringify(err) || "Lỗi không xác định";
+      console.error("[SystemConfig] Lỗi lưu cấu hình:", err);
+      showNotification("error", `Lỗi lưu cấu hình: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -433,8 +435,15 @@ export const SystemConfigManager = () => {
     }
 
     try {
+      const oldLogoUrl = config.logoUrl;
       const result = await uploadImage(file, "system");
       setConfig({ ...config, logoUrl: result.url });
+
+      // Delete old logo if exists
+      if (oldLogoUrl && oldLogoUrl.includes("product-images")) {
+        await deleteImage(oldLogoUrl);
+      }
+
       setNotification({ type: "success", message: "Upload logo thành công!" });
     } catch (error: any) {
       setNotification({
@@ -463,8 +472,17 @@ export const SystemConfigManager = () => {
     }
 
     try {
+      const oldBanner = config.banners.find((b) => b.id === bannerId);
+      const oldImageUrl = oldBanner?.imageUrl;
+
       const result = await uploadImage(file, "banners");
       handleUpdateBanner(bannerId, "imageUrl", result.url);
+
+      // Delete old banner image if exists
+      if (oldImageUrl && oldImageUrl.includes("product-images")) {
+        await deleteImage(oldImageUrl);
+      }
+
       setNotification({
         type: "success",
         message: "Upload banner thành công!",

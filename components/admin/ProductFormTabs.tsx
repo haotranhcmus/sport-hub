@@ -50,6 +50,41 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
   const specsRef = useRef<HTMLDivElement>(null);
   const policiesRef = useRef<HTMLDivElement>(null);
 
+  // Track scroll position and update active section
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const containerRect = container.getBoundingClientRect();
+      const containerTop = containerRect.top;
+      const threshold = containerTop + 100; // 100px from top of container
+
+      const sections = [
+        { id: "basic", ref: basicRef },
+        { id: "media", ref: mediaRef },
+        { id: "specs", ref: specsRef },
+        { id: "policies", ref: policiesRef },
+      ];
+
+      // Find the section that is currently in view (closest to top)
+      let currentSection = "basic";
+      for (const section of sections) {
+        if (section.ref.current) {
+          const rect = section.ref.current.getBoundingClientRect();
+          if (rect.top <= threshold) {
+            currentSection = section.id;
+          }
+        }
+      }
+
+      setActiveSection(currentSection);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollToSection = (sectionId: string) => {
     const refs = {
       basic: basicRef,
@@ -72,7 +107,6 @@ export const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
         top: container.scrollTop + relativeTop - 20,
         behavior: "smooth",
       });
-      setActiveSection(sectionId);
     }
   };
 

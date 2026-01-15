@@ -695,7 +695,7 @@ export const ReportsManager = () => {
                           {pm.method}
                         </span>
                         <span className="text-xs font-black text-slate-800">
-                          {pm.count} đơn
+                          {pm.count || 0} đơn
                         </span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -703,11 +703,18 @@ export const ReportsManager = () => {
                           className="h-full rounded-full transition-all duration-1000"
                           style={{
                             width: `${
-                              (pm.count /
-                                (data.paymentData[0].count +
-                                  data.paymentData[1].count +
-                                  data.paymentData[2].count)) *
-                              100
+                              data.paymentData && data.paymentData.length > 0
+                                ? ((pm.count || 0) /
+                                    Math.max(
+                                      1,
+                                      data.paymentData.reduce(
+                                        (sum: number, p: any) =>
+                                          sum + (p.count || 0),
+                                        0
+                                      )
+                                    )) *
+                                  100
+                                : 0
                             }%`,
                             backgroundColor: pm.color,
                           }}

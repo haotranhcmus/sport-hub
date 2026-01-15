@@ -167,36 +167,42 @@ const userService = {
     return data;
   },
 
-  // Change password (verify old password first)
+  // Change password using Supabase Auth
   changePassword: async (
     userId: string,
     oldPassword: string,
     newPassword: string
   ) => {
-    // Get current user to verify old password
-    const { data: user, error: fetchError } = await supabase
-      .from("User")
-      .select("password")
-      .eq("id", userId)
-      .single();
-
-    if (fetchError) throw new Error(fetchError.message);
-
-    // Verify old password (in real app, should use bcrypt)
-    if (user.password !== oldPassword) {
-      throw new Error("Mật khẩu cũ không chính xác");
-    }
-
     // Check new password is different from old
     if (oldPassword === newPassword) {
       throw new Error("Mật khẩu mới phải khác mật khẩu cũ");
     }
 
-    // Update password
-    const { error: updateError } = await supabase
+    // First, verify old password by trying to sign in
+    const { data: userData } = await supabase
       .from("User")
-      .update(withUpdatedAt({ password: newPassword }))
-      .eq("id", userId);
+      .select("email")
+      .eq("id", userId)
+      .single();
+
+    if (!userData?.email) {
+      throw new Error("Không tìm thấy thông tin người dùng");
+    }
+
+    // Try to sign in with old password to verify
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: userData.email,
+      password: oldPassword,
+    });
+
+    if (signInError) {
+      throw new Error("Mật khẩu cũ không chính xác");
+    }
+
+    // Update password using Supabase Auth
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
 
     if (updateError) throw new Error(updateError.message);
     return true;

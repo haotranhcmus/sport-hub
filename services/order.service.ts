@@ -206,7 +206,10 @@ export const orderService = {
     // 🔔 Notify customer about status change
     try {
       // Map status to notification type
-      const statusNotifyMap: Record<OrderStatus, "confirmed" | "shipping" | "delivered" | "cancelled" | null> = {
+      const statusNotifyMap: Record<
+        OrderStatus,
+        "confirmed" | "shipping" | "delivered" | "cancelled" | null
+      > = {
         [OrderStatus.PENDING_PAYMENT]: null,
         [OrderStatus.PENDING_CONFIRMATION]: null,
         [OrderStatus.PACKING]: "confirmed",

@@ -1,6 +1,7 @@
 # Hướng dẫn cấu hình Supabase Realtime cho Đơn hàng
 
 ## Mục đích
+
 Khi có đơn hàng mới hoặc cập nhật, admin sẽ thấy ngay lập tức mà không cần refresh trang.
 
 ## Bước 1: Bật Realtime cho bảng Order
@@ -39,14 +40,14 @@ Realtime chỉ hoạt động nếu user có quyền SELECT trên bảng. Chạy
 
 ```sql
 -- Đảm bảo policy cho phép admin đọc orders
-CREATE POLICY IF NOT EXISTS "Allow admin to read all orders" 
+CREATE POLICY IF NOT EXISTS "Allow admin to read all orders"
 ON "Order"
 FOR SELECT
 TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM "User" 
-    WHERE id = auth.uid() 
+    SELECT 1 FROM "User"
+    WHERE id = auth.uid()
     AND role IN ('ADMIN', 'SALES', 'WAREHOUSE')
   )
 );
@@ -77,7 +78,7 @@ Mở DevTools (F12) → Console, bạn sẽ thấy log khi có đơn hàng:
 Trong file `lib/supabase.ts`, đảm bảo có config realtime:
 
 ```typescript
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -85,24 +86,27 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   realtime: {
     params: {
-      eventsPerSecond: 10
-    }
-  }
+      eventsPerSecond: 10,
+    },
+  },
 });
 ```
 
 ## Troubleshooting
 
 ### Đơn hàng mới không tự động hiện
+
 1. Mở DevTools → Network → WS (WebSocket)
 2. Tìm connection đến Supabase realtime
 3. Kiểm tra messages gửi/nhận
 
 ### Lỗi "subscription error"
+
 - Kiểm tra Supabase project còn active không
 - Kiểm tra quota realtime connections (free tier: 200 concurrent)
 
 ### Chỉ INSERT hoạt động, UPDATE không
+
 - Đảm bảo trong SQL có `event: "*"` hoặc liệt kê cả `UPDATE`
 - Kiểm tra trigger không block
 
@@ -131,7 +135,7 @@ export const subscribeToOrders = (callback: OrderCallback) => {
       }
     )
     .subscribe();
-  
+
   return ordersChannel;
 };
 ```

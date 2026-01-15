@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Bell,
   Check,
@@ -122,7 +123,9 @@ export const NotificationBell: React.FC<{
 }> = ({ onNotificationClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const prevUnreadCount = useRef(0);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const {
     notifications,
@@ -142,12 +145,26 @@ export const NotificationBell: React.FC<{
     prevUnreadCount.current = unreadCount;
   }, [unreadCount]);
 
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: Math.max(rect.left - 280, 16), // Position left of button, min 16px from edge
+      });
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
@@ -157,10 +174,71 @@ export const NotificationBell: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Dropdown content
+  const dropdownContent = (
+    <div
+      ref={dropdownRef}
+      className="fixed w-80 bg-white rounded-lg shadow-2xl border border-gray-200 z-[9999] overflow-hidden"
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        maxHeight: 'calc(100vh - 120px)',
+        minWidth: '320px'
+      }}
+    >
+      {/* Header */}
+      <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
+        <h3 className="font-medium text-gray-800 text-sm">Thông báo</h3>
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllAsRead}
+            className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+          >
+            Đánh dấu đã đọc
+          </button>
+        )}
+      </div>
+
+      {/* Notifications List */}
+      <div className="max-h-96 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <div className="py-12 text-center">
+            <Bell size={40} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-sm text-gray-500">Chưa có thông báo</p>
+          </div>
+        ) : (
+          notifications.slice(0, 10).map((notification) => (
+            <NotificationItem
+              key={notification.id}
+              notification={notification}
+              onRead={() => markAsRead(notification.id)}
+              onDelete={() => deleteNotification(notification.id)}
+              onClick={() => {
+                onNotificationClick?.(notification);
+                setIsOpen(false);
+              }}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Footer */}
+      {notifications.length > 10 && (
+        <div className="px-4 py-3 bg-gray-50 border-t text-center">
+          <button className="text-xs text-blue-600 hover:underline font-medium flex items-center justify-center gap-1 w-full">
+            Xem tất cả
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       {/* Bell Button */}
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`relative p-2 hover:bg-gray-100 rounded-full transition ${
           isAnimating ? "animate-bounce" : ""
@@ -181,56 +259,8 @@ export const NotificationBell: React.FC<{
         )}
       </button>
 
-      {/* Dropdown */}
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 z-[9998] overflow-hidden animate-in fade-in slide-in-from-top-2">
-          {/* Header */}
-          <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
-            <h3 className="font-bold text-gray-800">Thông báo</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-xs text-blue-600 hover:underline font-medium"
-              >
-                Đánh dấu đã đọc
-              </button>
-            )}
-          </div>
-
-          {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="py-12 text-center">
-                <Bell size={40} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-sm text-gray-500">Chưa có thông báo</p>
-              </div>
-            ) : (
-              notifications.slice(0, 10).map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onRead={() => markAsRead(notification.id)}
-                  onDelete={() => deleteNotification(notification.id)}
-                  onClick={() => {
-                    onNotificationClick?.(notification);
-                    setIsOpen(false);
-                  }}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Footer */}
-          {notifications.length > 10 && (
-            <div className="px-4 py-3 bg-gray-50 border-t text-center">
-              <button className="text-xs text-blue-600 hover:underline font-medium flex items-center justify-center gap-1 w-full">
-                Xem tất cả
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Portal Dropdown - Renders outside sidebar to avoid overflow clipping */}
+      {isOpen && createPortal(dropdownContent, document.body)}
     </div>
   );
 };

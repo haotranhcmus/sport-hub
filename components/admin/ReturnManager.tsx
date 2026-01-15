@@ -166,49 +166,49 @@ export const ReturnManager = () => {
     switch (status) {
       case ReturnRequestStatus.PENDING:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-orange-100 text-orange-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-orange-100 text-orange-600 inline-flex items-center gap-1 whitespace-nowrap">
             <Clock size={12} /> Chờ duyệt
           </span>
         );
       case ReturnRequestStatus.APPROVED:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-blue-100 text-blue-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-blue-100 text-blue-600 inline-flex items-center gap-1 whitespace-nowrap">
             <CheckCircle2 size={12} /> Đã duyệt
           </span>
         );
       case ReturnRequestStatus.SHIPPING_BACK:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-purple-100 text-purple-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-purple-100 text-purple-600 inline-flex items-center gap-1 whitespace-nowrap">
             <Truck size={12} /> Đang gửi trả
           </span>
         );
       case ReturnRequestStatus.RECEIVED:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-cyan-100 text-cyan-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-cyan-100 text-cyan-600 inline-flex items-center gap-1 whitespace-nowrap">
             <Package size={12} /> Đã nhận hàng
           </span>
         );
       case ReturnRequestStatus.COMPLETED:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-green-100 text-green-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-green-100 text-green-600 inline-flex items-center gap-1 whitespace-nowrap">
             <CheckCircle2 size={12} /> Hoàn tất
           </span>
         );
       case ReturnRequestStatus.REJECTED:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-red-100 text-red-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-red-100 text-red-600 inline-flex items-center gap-1 whitespace-nowrap">
             <XCircle size={12} /> Từ chối
           </span>
         );
       case ReturnRequestStatus.CANCELLED:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-700 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 inline-flex items-center gap-1 whitespace-nowrap">
             <X size={12} /> Đã hủy
           </span>
         );
       default:
         return (
-          <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-700 inline-flex items-center gap-1.5 whitespace-nowrap">
+          <span className="px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 inline-flex items-center gap-1 whitespace-nowrap">
             <Info size={12} /> {status}
           </span>
         );
@@ -533,106 +533,136 @@ export const ReturnManager = () => {
         </div>
       </div>
 
-      {/* DETAIL MODAL */}
+      {/* DETAIL MODAL - Shopee Style */}
       {viewingRequest && (
-        <div className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white rounded-[32px] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
-            {/* Header - Compact */}
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <div className="flex items-center gap-4">
+        <div className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-gray-100 rounded-lg w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
+            {/* Header - Shopee style */}
+            <div className="px-5 py-4 bg-white border-b flex justify-between items-center">
+              <div className="flex items-center gap-3">
                 <div
-                  className={`p-3 rounded-2xl shadow-lg ${
+                  className={`p-2.5 rounded-lg ${
                     viewingRequest.type === ReturnType.EXCHANGE
-                      ? "bg-blue-600"
-                      : "bg-green-600"
-                  } text-white`}
+                      ? "bg-blue-50 text-blue-500"
+                      : "bg-green-50 text-green-500"
+                  }`}
                 >
                   {viewingRequest.type === ReturnType.EXCHANGE ? (
-                    <ArrowRightLeft size={22} />
+                    <ArrowRightLeft size={20} />
                   ) : (
-                    <Banknote size={22} />
+                    <Banknote size={20} />
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-black uppercase tracking-tight text-slate-800">
-                      Yêu cầu: {viewingRequest.requestCode}
+                    <h2 className="text-base font-bold text-gray-800">
+                      YÊU CẦU: {viewingRequest.requestCode}
                     </h2>
                     {getStatusBadge(viewingRequest.status)}
                   </div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase">
+                  <p className="text-xs text-gray-400 mt-0.5">
                     Gắn với đơn hàng:{" "}
-                    <span className="text-secondary">{viewingRequest.order.orderCode}</span>
+                    <span className="text-orange-500 font-medium">
+                      {viewingRequest.order.orderCode}
+                    </span>
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setViewingRequest(null)}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto">
               {/* Content - Grid layout horizontal */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-5">
-                {/* Cột trái: Sản phẩm + Lý do */}
-                <div className="space-y-4">
-                  {/* Sản phẩm đổi trả - Compact */}
-                  <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                    <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                      <Package size={12} className="text-secondary" /> Sản phẩm đổi trả
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4">
+                {/* Cột trái: Sản phẩm + Lý do (3 cols) */}
+                <div className="lg:col-span-3 space-y-4">
+                  {/* Sản phẩm đổi trả - Shopee style */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-100">
+                    <h4 className="text-xs text-gray-500 mb-3 flex items-center gap-2">
+                      <Package size={14} className="text-orange-500" /> SẢN PHẨM
+                      ĐỔI TRẢ
                     </h4>
                     <div className="flex gap-4">
                       <img
-                        src={viewingRequest.orderItem.thumbnailUrl || "https://via.placeholder.com/80"}
-                        className="w-20 h-20 rounded-xl object-cover border border-gray-100 shadow-sm"
+                        src={
+                          viewingRequest.orderItem.thumbnailUrl ||
+                          "https://via.placeholder.com/80"
+                        }
+                        className="w-20 h-20 rounded-lg object-cover border"
                         alt=""
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://via.placeholder.com/80";
+                          (e.target as HTMLImageElement).src =
+                            "https://via.placeholder.com/80";
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-black uppercase text-slate-800 truncate">
+                        <h3 className="text-sm font-medium text-gray-800">
                           {viewingRequest.orderItem.productName}
                         </h3>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          <span className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold uppercase">
-                            Màu: {viewingRequest.orderItem.color}
+                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
+                          <span>
+                            Màu:{" "}
+                            <span className="text-gray-700">
+                              {viewingRequest.orderItem.color}
+                            </span>
                           </span>
-                          <span className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold uppercase">
-                            Size: {viewingRequest.orderItem.size}
+                          <span>•</span>
+                          <span>
+                            Size:{" "}
+                            <span className="text-gray-700">
+                              {viewingRequest.orderItem.size}
+                            </span>
                           </span>
-                          <span className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold uppercase">
-                            SL: {viewingRequest.orderItem.quantity}
+                          <span>•</span>
+                          <span>
+                            SL:{" "}
+                            <span className="text-gray-700">
+                              {viewingRequest.orderItem.quantity}
+                            </span>
                           </span>
-                          <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-bold">
-                            {viewingRequest.orderItem.unitPrice.toLocaleString()}đ / cái
+                          <span className="text-orange-500 font-medium">
+                            {viewingRequest.orderItem.unitPrice.toLocaleString()}
+                            đ / cái
                           </span>
                         </div>
 
                         {/* Đổi sang (nếu là Exchange) */}
                         {viewingRequest.type === ReturnType.EXCHANGE &&
-                          (viewingRequest.exchangeToSize || viewingRequest.exchangeToColor) && (
-                            <div className="mt-3 p-2.5 bg-blue-50 rounded-xl border border-blue-200">
-                              <p className="text-[8px] font-black text-blue-500 uppercase mb-1.5">
-                                <ArrowRightLeft size={10} className="inline mr-1" /> Muốn đổi sang:
+                          (viewingRequest.exchangeToSize ||
+                            viewingRequest.exchangeToColor) && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                              <p className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
+                                <ArrowRightLeft size={12} /> MUỐN ĐỔI SANG:
                               </p>
-                              <div className="flex gap-1.5">
+                              <div className="flex gap-2">
                                 {viewingRequest.exchangeToSize && (
-                                  <span className="px-2 py-1 bg-white rounded text-[9px] font-bold text-blue-700">
+                                  <span className="px-2 py-1 bg-white rounded text-xs font-medium text-blue-700 border border-blue-200">
                                     Size: {viewingRequest.exchangeToSize}
                                   </span>
                                 )}
                                 {viewingRequest.exchangeToColor && (
-                                  <span className="px-2 py-1 bg-white rounded text-[9px] font-bold text-blue-700">
+                                  <span className="px-2 py-1 bg-white rounded text-xs font-medium text-blue-700 border border-blue-200">
                                     Màu: {viewingRequest.exchangeToColor}
                                   </span>
                                 )}
                               </div>
-                              <p className={`mt-2 text-[9px] font-bold ${inventoryStock >= viewingRequest.orderItem.quantity ? "text-green-600" : "text-red-600"}`}>
-                                📦 Tồn kho đích: {inventoryStock} cái {inventoryStock < viewingRequest.orderItem.quantity && "(KHÔNG ĐỦ)"}
+                              <p
+                                className={`mt-2 text-xs font-medium ${
+                                  inventoryStock >=
+                                  viewingRequest.orderItem.quantity
+                                    ? "text-green-600"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                📦 Tồn kho đích: {inventoryStock} cái{" "}
+                                {inventoryStock <
+                                  viewingRequest.orderItem.quantity &&
+                                  "(KHÔNG ĐỦ)"}
                               </p>
                             </div>
                           )}
@@ -641,19 +671,26 @@ export const ReturnManager = () => {
                   </div>
 
                   {/* Lý do + Hình ảnh */}
-                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <div className="flex items-center gap-2 text-slate-400 mb-2">
-                      <MessageSquare size={14} />
-                      <h4 className="text-[9px] font-black uppercase tracking-widest">Lý do khiếu nại</h4>
+                  <div className="bg-white rounded-lg p-4 border border-gray-100">
+                    <div className="flex items-center gap-2 text-gray-500 mb-3">
+                      <MessageSquare size={14} className="text-orange-500" />
+                      <h4 className="text-xs">LÝ DO KHIẾU NẠI</h4>
                     </div>
-                    <p className="text-sm font-bold text-slate-700 italic border-l-3 border-slate-200 pl-3">
+                    <p className="text-sm text-gray-700 italic pl-4 border-l-2 border-orange-300">
                       "{viewingRequest.reason}"
                     </p>
                     {viewingRequest.evidenceImages.length > 0 && (
-                      <div className="grid grid-cols-4 gap-2 mt-3">
+                      <div className="grid grid-cols-4 gap-2 mt-4">
                         {viewingRequest.evidenceImages.map((img, i) => (
-                          <div key={i} className="aspect-square rounded-lg overflow-hidden border border-white shadow-sm">
-                            <img src={img} className="w-full h-full object-cover" alt="" />
+                          <div
+                            key={i}
+                            className="aspect-square rounded-lg overflow-hidden border"
+                          >
+                            <img
+                              src={img}
+                              className="w-full h-full object-cover"
+                              alt=""
+                            />
                           </div>
                         ))}
                       </div>
@@ -661,39 +698,51 @@ export const ReturnManager = () => {
                   </div>
                 </div>
 
-                {/* Cột phải: Thông tin khách + Bank */}
-                <div className="space-y-4">
+                {/* Cột phải: Thông tin khách + Bank (2 cols) */}
+                <div className="lg:col-span-2 space-y-4">
                   {/* Thông tin khách hàng */}
-                  <div className="bg-white p-4 rounded-2xl border border-gray-100">
-                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-3">
-                      <Info size={12} className="text-secondary" /> Thông tin khách hàng
+                  <div className="bg-white rounded-lg p-4 border border-gray-100">
+                    <h4 className="text-xs text-gray-500 flex items-center gap-2 mb-3">
+                      <Info size={14} className="text-orange-500" /> THÔNG TIN
+                      KHÁCH HÀNG
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase">Họ tên</p>
-                        <p className="font-black text-slate-800 text-sm uppercase">{viewingRequest.order.customerName}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase">Điện thoại</p>
-                        <p className="font-bold text-slate-600 text-sm">{viewingRequest.order.customerPhone}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase">Ngày mua</p>
-                        <p className="font-bold text-slate-800 text-sm">
-                          {new Date(viewingRequest.order.createdAt || "").toLocaleDateString("vi-VN")}
+                        <p className="text-xs text-gray-400 mb-1">HỌ TÊN</p>
+                        <p className="font-bold text-gray-800">
+                          {viewingRequest.order.customerName}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase">Tổng đơn</p>
-                        <p className="font-black text-red-600 text-sm">
-                          {viewingRequest.order.totalAmount?.toLocaleString() || "N/A"}đ
+                        <p className="text-xs text-gray-400 mb-1">ĐIỆN THOẠI</p>
+                        <p className="font-medium text-gray-700">
+                          {viewingRequest.order.customerPhone}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">NGÀY MUA</p>
+                        <p className="font-medium text-gray-700">
+                          {new Date(
+                            viewingRequest.order.createdAt || ""
+                          ).toLocaleDateString("vi-VN")}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">TỔNG ĐƠN</p>
+                        <p className="font-bold text-orange-500">
+                          {viewingRequest.order.totalAmount?.toLocaleString() ||
+                            "N/A"}
+                          đ
                         </p>
                       </div>
                     </div>
                     {viewingRequest.order.customerAddress && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-2">
-                        <Truck size={14} className="text-blue-600 shrink-0 mt-0.5" />
-                        <p className="text-[9px] font-bold text-blue-800 uppercase leading-relaxed">
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-start gap-2">
+                        <Truck
+                          size={14}
+                          className="text-orange-500 shrink-0 mt-0.5"
+                        />
+                        <p className="text-xs text-gray-600">
                           {viewingRequest.order.customerAddress}
                         </p>
                       </div>
@@ -702,18 +751,18 @@ export const ReturnManager = () => {
 
                   {/* Tài khoản hoàn tiền */}
                   {viewingRequest.bankInfo && (
-                    <div className="bg-green-50 p-4 rounded-2xl border border-green-200">
-                      <h4 className="text-[9px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 mb-3">
-                        <Banknote size={12} /> Tài khoản hoàn tiền
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                      <h4 className="text-xs text-green-700 flex items-center gap-2 mb-3">
+                        <Banknote size={14} /> TÀI KHOẢN HOÀN TIỀN
                       </h4>
-                      <div className="bg-white p-3 rounded-xl space-y-1">
-                        <p className="text-[10px] font-black text-slate-800 uppercase">
+                      <div className="bg-white p-3 rounded-lg border border-green-100 space-y-2">
+                        <p className="text-xs text-gray-500">
                           {viewingRequest.bankInfo.bankName}
                         </p>
-                        <p className="text-sm font-black text-slate-900 tracking-widest">
+                        <p className="text-lg font-bold text-gray-800 tracking-wider">
                           {viewingRequest.bankInfo.accountNumber}
                         </p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase">
+                        <p className="text-xs text-gray-600">
                           {viewingRequest.bankInfo.accountHolder}
                         </p>
                       </div>
@@ -723,31 +772,33 @@ export const ReturnManager = () => {
               </div>
             </div>
 
-            {/* Footer - Actions */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+            {/* Footer - Actions - Shopee style */}
+            <div className="px-5 py-4 bg-white border-t flex justify-between items-center">
               {/* Reject button - only for PENDING */}
               {viewingRequest.status === ReturnRequestStatus.PENDING ? (
                 <button
                   onClick={() => setShowRejectModal(true)}
-                  className="px-6 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl font-black text-[9px] uppercase hover:bg-red-50 transition"
+                  className="px-5 py-2.5 border border-red-200 text-red-500 rounded font-medium text-sm hover:bg-red-50 transition"
                 >
                   TỪ CHỐI YÊU CẦU
                 </button>
-              ) : <div />}
+              ) : (
+                <div />
+              )}
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setViewingRequest(null)}
-                  className="px-6 py-2.5 font-black text-gray-400 uppercase text-[9px] hover:text-slate-800 transition"
+                  className="px-5 py-2.5 text-gray-500 font-medium text-sm hover:bg-gray-100 rounded transition"
                 >
-                  Đóng
+                  ĐÓNG
                 </button>
 
                 {/* Approve button - only for PENDING */}
                 {viewingRequest.status === ReturnRequestStatus.PENDING && (
                   <button
                     onClick={() => setShowApproveModal(true)}
-                    className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-black uppercase text-[9px] shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-blue-700 transition"
+                    className="px-6 py-2.5 bg-orange-500 text-white rounded font-medium text-sm hover:bg-orange-600 transition flex items-center gap-2"
                   >
                     <CheckCircle2 size={14} /> DUYỆT YÊU CẦU
                   </button>
@@ -758,7 +809,7 @@ export const ReturnManager = () => {
                   <button
                     onClick={handleConfirmReceived}
                     disabled={loading}
-                    className="px-8 py-2.5 bg-cyan-600 text-white rounded-xl font-black uppercase text-[9px] shadow-lg shadow-cyan-500/30 flex items-center gap-2 hover:bg-cyan-700 transition disabled:opacity-50"
+                    className="px-6 py-2.5 bg-cyan-500 text-white rounded font-medium text-sm hover:bg-cyan-600 transition flex items-center gap-2 disabled:opacity-50"
                   >
                     {loading ? (
                       <RefreshCw className="animate-spin" size={14} />
@@ -774,7 +825,7 @@ export const ReturnManager = () => {
                   <button
                     onClick={handleComplete}
                     disabled={loading}
-                    className="px-8 py-2.5 bg-green-600 text-white rounded-xl font-black uppercase text-[9px] shadow-lg shadow-green-500/30 flex items-center gap-2 hover:bg-green-700 transition disabled:opacity-50"
+                    className="px-6 py-2.5 bg-green-500 text-white rounded font-medium text-sm hover:bg-green-600 transition flex items-center gap-2 disabled:opacity-50"
                   >
                     {loading ? (
                       <RefreshCw className="animate-spin" size={14} />
@@ -790,44 +841,44 @@ export const ReturnManager = () => {
         </div>
       )}
 
-      {/* APPROVE MODAL */}
+      {/* APPROVE MODAL - Shopee style */}
       {showApproveModal && (
-        <div className="fixed inset-0 bg-black/70 z-[400] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95">
+        <div className="fixed inset-0 bg-black/50 z-[400] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-sm shadow-xl overflow-hidden animate-in zoom-in-95">
             <div className="p-6 text-center space-y-4">
-              <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+              <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle2 size={28} />
               </div>
               <div className="space-y-1">
-                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">
+                <h3 className="text-lg font-bold text-gray-800">
                   Phê duyệt yêu cầu
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-sm text-gray-500">
                   Xác nhận duyệt yêu cầu đổi/trả này?
                 </p>
               </div>
               <textarea
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-6 outline-none font-medium text-sm h-24 focus:ring-2 focus:ring-blue-100 transition"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none text-sm h-20 focus:border-orange-500 resize-none"
                 placeholder="Ghi chú cho khách hàng (tuỳ chọn)..."
                 value={approveNotes}
                 onChange={(e) => setApproveNotes(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowApproveModal(false)}
-                  className="py-4 bg-gray-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition"
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded font-medium text-sm hover:bg-gray-200 transition"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleApprove}
                   disabled={loading}
-                  className="py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-orange-500 text-white rounded font-medium text-sm hover:bg-orange-600 transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <RefreshCw className="animate-spin" size={14} />
                   ) : (
-                    "XÁC NHẬN DUYỆT"
+                    "Xác nhận duyệt"
                   )}
                 </button>
               </div>
@@ -836,45 +887,45 @@ export const ReturnManager = () => {
         </div>
       )}
 
+      {/* Reject Modal - Shopee style */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/70 z-[400] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-10 text-center space-y-6">
-              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
-                <AlertOctagon size={40} />
+        <div className="fixed inset-0 bg-black/50 z-[400] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-lg w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                <AlertOctagon size={28} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">
-                  Từ chối Đổi / Trả
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Từ chối yêu cầu đổi/trả
                 </h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                  Vui lòng nhập lý do từ chối để hệ thống thông báo cho khách
-                  hàng.
+                <p className="text-sm text-gray-500">
+                  Vui lòng nhập lý do từ chối để thông báo cho khách hàng.
                 </p>
               </div>
               <textarea
                 autoFocus
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-6 outline-none font-medium text-sm h-32 focus:ring-2 focus:ring-red-100 transition"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none text-sm h-24 focus:border-red-500 resize-none"
                 placeholder="Ví dụ: Sản phẩm đã qua sử dụng..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowRejectModal(false)}
-                  className="py-4 bg-gray-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition"
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded font-medium text-sm hover:bg-gray-200 transition"
                 >
                   Quay lại
                 </button>
                 <button
                   onClick={handleReject}
                   disabled={!rejectReason.trim() || loading}
-                  className="py-4 bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-red-700 transition disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-red-500 text-white rounded font-medium text-sm hover:bg-red-600 transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <RefreshCw className="animate-spin" size={14} />
                   ) : (
-                    "XÁC NHẬN TỪ CHỐI"
+                    "Xác nhận từ chối"
                   )}
                 </button>
               </div>

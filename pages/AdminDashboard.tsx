@@ -137,13 +137,13 @@ export const AdminDashboard = () => {
         )}
 
         <aside
-          className={`absolute md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 transition-transform duration-300 transform ${
+          className={`absolute md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 transition-transform duration-300 transform overflow-visible ${
             isSidebarOpen
               ? "translate-x-0"
               : "-translate-x-full md:translate-x-0"
           }`}
         >
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center overflow-visible relative z-[9999]">
             <div className="flex items-center gap-3">
               <img
                 src={
@@ -164,7 +164,7 @@ export const AdminDashboard = () => {
             </div>
             <div className="flex items-center gap-2">
               {/* Notification Bell */}
-              <NotificationBell 
+              <NotificationBell
                 onNotificationClick={(notification) => {
                   // Navigate based on notification type
                   if (notification.type === "NEW_ORDER") {

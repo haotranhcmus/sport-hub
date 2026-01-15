@@ -25,10 +25,24 @@ export const systemService = {
   },
 
   updateConfig: async (updates: any, user?: User) => {
+    // First get the config to find its ID
+    const { data: existingConfig } = await supabase
+      .from("SystemConfig")
+      .select("id")
+      .limit(1)
+      .single();
+
+    if (!existingConfig) {
+      throw new Error("Không tìm thấy cấu hình hệ thống");
+    }
+
+    // Remove id from updates to avoid conflicts
+    const { id, ...updateData } = updates;
+
     const { data, error } = await supabase
       .from("SystemConfig")
-      .update(updates)
-      .eq("id", 1) // Assuming single config row
+      .update(updateData)
+      .eq("id", existingConfig.id)
       .select()
       .single();
 

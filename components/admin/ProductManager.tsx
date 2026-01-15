@@ -54,7 +54,7 @@ import {
   useAttributes,
   useSizeGuides,
 } from "../../hooks/useInventoryQuery";
-import { uploadImage, replaceImage } from "../../lib/storage";
+import { uploadImage, replaceImage, deleteImage } from "../../lib/storage";
 import { ProductFormTabs } from "./ProductFormTabs"; // ✅ NEW: Import new component
 import { BulkImportWizard } from "./BulkImportWizard"; // ✅ Bulk Import
 
@@ -322,12 +322,34 @@ const ProductFormModal = ({
   const mainFileInputRef = useRef<HTMLInputElement>(null);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleClose = () => {
+  // Track newly uploaded images in this session (for cleanup if cancel)
+  const [sessionUploadedImages, setSessionUploadedImages] = useState<string[]>(
+    []
+  );
+  const [hasSaved, setHasSaved] = useState(false);
+
+  const handleClose = async () => {
     if (loading) return;
     const confirmed = window.confirm(
       "Đóng form? Thông tin chưa lưu sẽ bị mất."
     );
-    if (confirmed) onClose();
+    if (confirmed) {
+      // Clean up uploaded images if not saved
+      if (!hasSaved && sessionUploadedImages.length > 0) {
+        console.log(
+          "🗑️ Cleaning up unsaved images:",
+          sessionUploadedImages.length
+        );
+        for (const imageUrl of sessionUploadedImages) {
+          try {
+            await deleteImage(imageUrl);
+          } catch (e) {
+            console.warn("Failed to delete orphan image:", imageUrl);
+          }
+        }
+      }
+      onClose();
+    }
   };
 
   const [formData, setFormData] = useState({
@@ -427,14 +449,24 @@ const ProductFormModal = ({
       console.log("📷 [PRODUCT] Uploading main image...");
 
       let imageUrl: string;
+      const oldThumbnail = formData.thumbnailUrl;
 
       // If updating existing product with old image, replace it
       if (savedProduct && formData.thumbnailUrl) {
         imageUrl = await replaceImage(formData.thumbnailUrl, file, "products");
       } else {
-        // New upload
+        // New upload - track for cleanup if cancel
         const result = await uploadImage(file, "products");
         imageUrl = result.url;
+        setSessionUploadedImages((prev) => [...prev, imageUrl]);
+
+        // If there was an unsaved previous image, remove from tracking and delete
+        if (oldThumbnail && sessionUploadedImages.includes(oldThumbnail)) {
+          setSessionUploadedImages((prev) =>
+            prev.filter((url) => url !== oldThumbnail)
+          );
+          await deleteImage(oldThumbnail);
+        }
       }
 
       setFormData({ ...formData, thumbnailUrl: imageUrl });
@@ -483,6 +515,9 @@ const ProductFormModal = ({
         uploadedUrls.push(result.url);
       }
 
+      // Track new uploads for cleanup if cancel
+      setSessionUploadedImages((prev) => [...prev, ...uploadedUrls]);
+
       setFormData({
         ...formData,
         imageUrls: [...currentImages, ...uploadedUrls],
@@ -498,10 +533,19 @@ const ProductFormModal = ({
   };
 
   // ✅ NEW: Remove gallery image
-  const handleRemoveGalleryImage = (index: number) => {
+  const handleRemoveGalleryImage = async (index: number) => {
+    const imageToRemove = formData.imageUrls?.[index];
     const newImages = [...(formData.imageUrls || [])];
     newImages.splice(index, 1);
     setFormData({ ...formData, imageUrls: newImages });
+
+    // If this was a newly uploaded image, remove from tracking and delete immediately
+    if (imageToRemove && sessionUploadedImages.includes(imageToRemove)) {
+      setSessionUploadedImages((prev) =>
+        prev.filter((url) => url !== imageToRemove)
+      );
+      await deleteImage(imageToRemove);
+    }
   };
 
   // ✅ NEW: Save everything (product + variants) for editing mode
@@ -587,6 +631,8 @@ const ProductFormModal = ({
         imageUrlsLength: res.imageUrls?.length,
       });
       setSavedProduct(res);
+      setHasSaved(true); // Mark as saved so images won't be cleaned up on close
+      setSessionUploadedImages([]); // Clear tracking since saved successfully
       // ✅ FIX: Notify parent of updated product
       if (onSave) {
         onSave(res);
@@ -605,7 +651,7 @@ const ProductFormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col animate-in zoom-in-95 duration-300">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-t-3xl">
