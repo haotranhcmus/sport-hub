@@ -24,9 +24,70 @@ import {
   CheckCircle2,
   Mail,
   ExternalLink,
+  Plus,
+  Edit3,
+  User,
+  Phone,
+  Home,
 } from "lucide-react";
 import { Order, OrderStatus, UserAddress } from "../types";
 import { api } from "../services";
+
+// Vietnam location data (for shipping calculation)
+const PROVINCES = [
+  { code: "01", name: "Hà Nội" },
+  { code: "79", name: "TP. Hồ Chí Minh" },
+  { code: "48", name: "Đà Nẵng" },
+  { code: "31", name: "Hải Phòng" },
+  { code: "92", name: "Cần Thơ" },
+  { code: "74", name: "Bình Dương" },
+  { code: "75", name: "Đồng Nai" },
+  { code: "77", name: "Bà Rịa - Vũng Tàu" },
+  { code: "89", name: "An Giang" },
+  { code: "26", name: "Vĩnh Phúc" },
+];
+
+const DISTRICTS: Record<string, { code: string; name: string }[]> = {
+  "01": [
+    { code: "001", name: "Ba Đình" },
+    { code: "002", name: "Hoàn Kiếm" },
+    { code: "003", name: "Tây Hồ" },
+    { code: "004", name: "Long Biên" },
+    { code: "005", name: "Cầu Giấy" },
+    { code: "006", name: "Đống Đa" },
+    { code: "007", name: "Hai Bà Trưng" },
+    { code: "008", name: "Hoàng Mai" },
+    { code: "009", name: "Thanh Xuân" },
+  ],
+  "79": [
+    { code: "760", name: "Quận 1" },
+    { code: "761", name: "Quận 3" },
+    { code: "770", name: "Bình Thạnh" },
+    { code: "771", name: "Gò Vấp" },
+    { code: "772", name: "Phú Nhuận" },
+    { code: "773", name: "Tân Bình" },
+    { code: "774", name: "Tân Phú" },
+    { code: "775", name: "Thủ Đức" },
+    { code: "776", name: "Bình Tân" },
+  ],
+};
+
+const WARDS: Record<string, { code: string; name: string }[]> = {
+  "760": [
+    { code: "26734", name: "Phường Bến Nghé" },
+    { code: "26737", name: "Phường Bến Thành" },
+    { code: "26740", name: "Phường Cầu Kho" },
+  ],
+  "770": [
+    { code: "26830", name: "Phường 1" },
+    { code: "26833", name: "Phường 2" },
+    { code: "26836", name: "Phường 3" },
+  ],
+  "001": [
+    { code: "00001", name: "Phường Phúc Xá" },
+    { code: "00004", name: "Phường Trúc Bạch" },
+  ],
+};
 
 const COD_LIMIT = 10000000; // 10 triệu
 
@@ -36,6 +97,57 @@ export const CheckoutPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+
+  // System Config for shipping calculation
+  const [systemConfig, setSystemConfig] = useState<{
+    storeProvinceCode: string;
+    baseShippingFee: number;
+    sameProvinceDiscount: number;
+    freeShippingThreshold: number;
+  } | null>(null);
+
+  // Load system config on mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const config = await api.system.getConfig();
+        setSystemConfig({
+          storeProvinceCode: config.storeProvinceCode || "79",
+          baseShippingFee: config.baseShippingFee || 30000,
+          sameProvinceDiscount: config.sameProvinceDiscount || 30,
+          freeShippingThreshold: config.freeShippingThreshold || 1000000,
+        });
+      } catch (err) {
+        // Default values if config fails to load
+        setSystemConfig({
+          storeProvinceCode: "79",
+          baseShippingFee: 30000,
+          sameProvinceDiscount: 30,
+          freeShippingThreshold: 1000000,
+        });
+      }
+    };
+    loadConfig();
+  }, []);
+
+  // Calculate shipping fee based on province and system config
+  const calculateShippingByProvince = (
+    customerProvinceCode?: string
+  ): number => {
+    if (!systemConfig) return 30000; // Default if config not loaded
+    if (!customerProvinceCode) return systemConfig.baseShippingFee;
+
+    // Same province as store - apply discount
+    if (customerProvinceCode === systemConfig.storeProvinceCode) {
+      return Math.round(
+        systemConfig.baseShippingFee *
+          (1 - systemConfig.sameProvinceDiscount / 100)
+      );
+    }
+
+    // Different province - full shipping fee
+    return systemConfig.baseShippingFee;
+  };
 
   // Success States
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -49,36 +161,47 @@ export const CheckoutPage = () => {
   const [otpExpiryTime, setOtpExpiryTime] = useState(300);
   const timerRef = useRef<any>(null);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "HCM", // HCM: Nội thành, HN: Ngoại thành, OTHER: Tỉnh khác
-    note: "",
-    paymentMethod: "COD",
-  });
-
-  // Address Book States
-  const [showAddressBookModal, setShowAddressBookModal] = useState(false);
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
-  const [saveToAddressBook, setSaveToAddressBook] = useState(isAuthenticated);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+  // Selected Address State (Shopee style - only select from address book)
+  const [selectedAddress, setSelectedAddress] = useState<UserAddress | null>(
     null
   );
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
 
-  // New Address Form
-  const [newAddress, setNewAddress] = useState({
+  // Order form state
+  const [orderNote, setOrderNote] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+
+  // New Address Form State
+  const [newAddressForm, setNewAddressForm] = useState({
     name: "",
     phone: "",
     address: "",
+    provinceCode: "",
+    districtCode: "",
+    wardCode: "",
+    city: "",
+    district: "",
+    ward: "",
   });
+  const [addressErrors, setAddressErrors] = useState<Record<string, string>>(
+    {}
+  );
 
-  // Requirement 4: Calculate Shipping Fee PER ITEM
+  // Get districts for selected province
+  const availableDistricts = newAddressForm.provinceCode
+    ? DISTRICTS[newAddressForm.provinceCode] || []
+    : [];
+  // Get wards for selected district
+  const availableWards = newAddressForm.districtCode
+    ? WARDS[newAddressForm.districtCode] || []
+    : [];
+
+  // Calculate shipping based on selected address and system config
   const calculateShipping = () => {
-    // Free shipping if total > 1 million
-    if (totalPrice > 1000000) return 0;
+    // Free shipping if total exceeds threshold from system config
+    const freeThreshold = systemConfig?.freeShippingThreshold || 1000000;
+    if (totalPrice >= freeThreshold) return 0;
 
     // Calculate number of items that need shipping fee
     const itemsNeedShipping = items.filter(
@@ -88,24 +211,14 @@ export const CheckoutPage = () => {
     // If no items need shipping, return 0
     if (itemsNeedShipping.length === 0) return 0;
 
-    // Calculate base rate per city
-    let baseRate = 0;
-    switch (formData.city) {
-      case "HCM":
-        baseRate = 20000;
-        break;
-      case "HN":
-        baseRate = 35000;
-        break;
-      default:
-        baseRate = 50000;
-    }
+    // Get base rate from selected address province (with same-province discount)
+    const baseRate = calculateShippingByProvince(selectedAddress?.provinceCode);
 
     // Calculate total shipping: base rate for first item, 50% for additional items
     const firstItemFee = baseRate;
     const additionalItemsFee =
       (itemsNeedShipping.length - 1) * (baseRate * 0.5);
-    return firstItemFee + additionalItemsFee;
+    return Math.round(firstItemFee + additionalItemsFee);
   };
 
   // Calculate shipping fee for each item
@@ -124,18 +237,8 @@ export const CheckoutPage = () => {
 
     if (itemIndex === -1) return 0;
 
-    // Calculate base rate
-    let baseRate = 0;
-    switch (formData.city) {
-      case "HCM":
-        baseRate = 20000;
-        break;
-      case "HN":
-        baseRate = 35000;
-        break;
-      default:
-        baseRate = 50000;
-    }
+    // Get base rate from selected address province
+    const baseRate = calculateShippingByProvince(selectedAddress?.provinceCode);
 
     // First item pays full, others pay 50%
     return itemIndex === 0 ? baseRate : baseRate * 0.5;
@@ -144,22 +247,12 @@ export const CheckoutPage = () => {
   const shippingFee = calculateShipping();
   const finalTotal = totalPrice + shippingFee;
 
+  // Initialize with default address on mount
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && user.addresses.length > 0) {
       const defaultAddr =
         user.addresses.find((a) => a.isDefault) || user.addresses[0];
-
-      setFormData((prev) => ({
-        ...prev,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone || defaultAddr?.phone || "",
-        address: defaultAddr?.address || "",
-      }));
-
-      if (defaultAddr) {
-        setSelectedAddressId(defaultAddr.id);
-      }
+      setSelectedAddress(defaultAddr);
     }
   }, [isAuthenticated, user]);
 
@@ -174,83 +267,125 @@ export const CheckoutPage = () => {
     return () => clearInterval(timerRef.current);
   }, [showOTPModal]);
 
-  // Handle address selection from address book
+  // Handle address selection
   const handleSelectAddress = (address: UserAddress) => {
-    setFormData((prev) => ({
-      ...prev,
-      phone: address.phone,
-      address: address.address,
-    }));
-    setSelectedAddressId(address.id);
-    setShowAddressBookModal(false);
+    setSelectedAddress(address);
+    setShowAddressModal(false);
   };
 
-  // Save current address to address book
-  const handleSaveAddress = () => {
-    if (!isAuthenticated || !user || !formData.phone || !formData.address) {
-      alert("Vui lòng điền đầy đủ số điện thoại và địa chỉ");
-      return;
-    }
-
-    // Check if address already exists
-    const existingAddress = user.addresses.find(
-      (a) => a.phone === formData.phone && a.address === formData.address
-    );
-
-    if (existingAddress) {
-      alert("Địa chỉ này đã có trong sổ địa chỉ!");
-      return;
-    }
-
-    addAddress({
-      name: formData.fullName,
-      phone: formData.phone,
-      address: formData.address,
-      isDefault: user.addresses.length === 0,
+  // Handle province change in new address form
+  const handleProvinceChange = (code: string) => {
+    const province = PROVINCES.find((p) => p.code === code);
+    setNewAddressForm({
+      ...newAddressForm,
+      provinceCode: code,
+      city: province?.name || "",
+      districtCode: "",
+      district: "",
+      wardCode: "",
+      ward: "",
     });
-
-    alert("✅ Đã lưu địa chỉ vào sổ địa chỉ!");
-    setSaveToAddressBook(false);
+    setAddressErrors({ ...addressErrors, province: "" });
   };
 
-  // Handle creating new address from modal
+  // Handle district change
+  const handleDistrictChange = (code: string) => {
+    const district = availableDistricts.find((d) => d.code === code);
+    setNewAddressForm({
+      ...newAddressForm,
+      districtCode: code,
+      district: district?.name || "",
+      wardCode: "",
+      ward: "",
+    });
+    setAddressErrors({ ...addressErrors, district: "" });
+  };
+
+  // Handle ward change
+  const handleWardChange = (code: string) => {
+    const ward = availableWards.find((w) => w.code === code);
+    setNewAddressForm({
+      ...newAddressForm,
+      wardCode: code,
+      ward: ward?.name || "",
+    });
+    setAddressErrors({ ...addressErrors, ward: "" });
+  };
+
+  // Validate new address form
+  const validateNewAddress = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!newAddressForm.name.trim())
+      errors.name = "Vui lòng nhập tên người nhận";
+    if (!newAddressForm.phone.trim()) {
+      errors.phone = "Vui lòng nhập số điện thoại";
+    } else if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(newAddressForm.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ";
+    }
+    if (!newAddressForm.provinceCode)
+      errors.province = "Vui lòng chọn Tỉnh/Thành phố";
+    if (!newAddressForm.districtCode)
+      errors.district = "Vui lòng chọn Quận/Huyện";
+    if (!newAddressForm.wardCode) errors.ward = "Vui lòng chọn Phường/Xã";
+    if (!newAddressForm.address.trim())
+      errors.address = "Vui lòng nhập địa chỉ chi tiết";
+
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Create new address and select it
   const handleCreateNewAddress = async () => {
-    if (!newAddress.name || !newAddress.phone || !newAddress.address) {
-      alert("Vui lòng điền đầy đủ thông tin địa chỉ");
-      return;
-    }
+    if (!validateNewAddress()) return;
 
-    await addAddress({
-      name: newAddress.name,
-      phone: newAddress.phone,
-      address: newAddress.address,
-      isDefault: user?.addresses.length === 0,
+    const newAddr: UserAddress = {
+      id: crypto.randomUUID(),
+      name: newAddressForm.name,
+      phone: newAddressForm.phone,
+      address: newAddressForm.address,
+      city: newAddressForm.city,
+      district: newAddressForm.district,
+      ward: newAddressForm.ward,
+      provinceCode: newAddressForm.provinceCode,
+      districtCode: newAddressForm.districtCode,
+      wardCode: newAddressForm.wardCode,
+      isDefault: !user?.addresses.length,
+    };
+
+    await addAddress(newAddr);
+    setSelectedAddress(newAddr);
+
+    // Reset form
+    setNewAddressForm({
+      name: "",
+      phone: "",
+      address: "",
+      provinceCode: "",
+      districtCode: "",
+      wardCode: "",
+      city: "",
+      district: "",
+      ward: "",
     });
-
-    // Auto-select the newly created address
-    setFormData((prev) => ({
-      ...prev,
-      phone: newAddress.phone,
-      address: newAddress.address,
-    }));
-
-    // Reset form and close
-    setNewAddress({ name: "", phone: "", address: "" });
     setShowNewAddressForm(false);
-    setShowAddressBookModal(false);
+    setShowAddressModal(false);
+  };
 
-    alert("✅ Đã thêm địa chỉ mới!");
+  // Get full address string
+  const getFullAddress = (addr: UserAddress) => {
+    const parts = [addr.address, addr.ward, addr.district, addr.city].filter(
+      Boolean
+    );
+    return parts.join(", ");
   };
 
   const startOrderProcess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.phone ||
-      !formData.fullName ||
-      !formData.address ||
-      !formData.email
-    ) {
-      alert("Vui lòng điền đầy đủ các thông tin có dấu (*)");
+
+    // Validate selected address (Shopee style - must select from address book)
+    if (!selectedAddress) {
+      alert("Vui lòng chọn địa chỉ giao hàng từ sổ địa chỉ");
       return;
     }
 
@@ -263,8 +398,9 @@ export const CheckoutPage = () => {
         return;
       }
 
+      // For guest users, require OTP verification
       if (!isAuthenticated) {
-        const res = await api.auth.sendOTP(formData.phone);
+        const res = await api.auth.sendOTP(selectedAddress.phone);
         if (res.success) {
           setShowOTPModal(true);
           setOtpExpiryTime(300);
@@ -305,6 +441,8 @@ export const CheckoutPage = () => {
   };
 
   const finalizeOrder = async () => {
+    if (!selectedAddress) return;
+
     setIsProcessingOrder(true);
     // Tạo mã đơn ngẫu nhiên chuyên nghiệp
     const orderCode = `ORD-${Date.now().toString().slice(-6)}${Math.random()
@@ -320,22 +458,24 @@ export const CheckoutPage = () => {
 
     // Fix shorthand OrderStatus.S2 to OrderStatus.PENDING_CONFIRMATION and S1 to PENDING_PAYMENT
     const initialStatus =
-      formData.paymentMethod === "COD"
+      paymentMethod === "COD"
         ? OrderStatus.PENDING_CONFIRMATION
         : OrderStatus.PENDING_PAYMENT;
+
+    const fullAddress = getFullAddress(selectedAddress);
 
     const newOrder: Order = {
       id: Date.now().toString(),
       orderCode: orderCode,
-      customerName: formData.fullName,
-      customerPhone: formData.phone,
-      customerAddress: formData.address,
-      customerNotes: formData.note,
+      customerName: selectedAddress.name,
+      customerPhone: selectedAddress.phone,
+      customerAddress: fullAddress,
+      customerNotes: orderNote,
       customerType: isAuthenticated ? "member" : "guest",
       totalAmount: finalTotal,
       shippingFee: shippingFee,
       status: initialStatus,
-      paymentMethod: formData.paymentMethod as any,
+      paymentMethod: paymentMethod as any,
       paymentStatus: "UNPAID",
       createdAt: new Date().toISOString(),
       items: items.map((i) => ({
@@ -363,26 +503,9 @@ export const CheckoutPage = () => {
 
       await api.orders.create(newOrder);
 
-      if (formData.paymentMethod === "COD") {
+      if (paymentMethod === "COD") {
         console.log("📦 [CHECKOUT] Trừ kho cho đơn hàng COD");
         await api.products.deductStock(newOrder.items);
-
-        // Auto-save address to address book if user is logged in and saveToAddressBook is checked
-        if (isAuthenticated && user && saveToAddressBook) {
-          const existingAddress = user.addresses.find(
-            (a) => a.phone === formData.phone && a.address === formData.address
-          );
-
-          if (!existingAddress) {
-            addAddress({
-              name: formData.fullName,
-              phone: formData.phone,
-              address: formData.address,
-              isDefault: user.addresses.length === 0,
-            });
-            console.log("📍 [CHECKOUT] Đã lưu địa chỉ vào sổ địa chỉ");
-          }
-        }
 
         // Hiển thị Modal thay vì alert
         setSuccessOrder(newOrder);
@@ -446,225 +569,136 @@ export const CheckoutPage = () => {
         onSubmit={startOrderProcess}
         className="grid grid-cols-1 lg:grid-cols-3 gap-10"
       >
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-            <h2 className="font-black text-xl mb-8 flex items-center gap-3 uppercase tracking-tight">
-              <span className="bg-secondary text-white w-8 h-8 rounded-2xl flex items-center justify-center text-sm shadow-md font-black">
-                1
-              </span>
-              Thông tin giao hàng
-            </h2>
+        <div className="lg:col-span-2 space-y-6">
+          {/* SHOPEE-STYLE: Địa chỉ giao hàng Card */}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Header with gradient like Shopee */}
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 h-1"></div>
 
-            {/* Quick Address Selection Button */}
-            {isAuthenticated && user && user.addresses.length > 0 && (
-              <div className="mb-6">
-                <button
-                  type="button"
-                  onClick={() => setShowAddressBookModal(true)}
-                  className="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl hover:border-blue-400 transition flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500 rounded-xl">
-                      <MapPin size={20} className="text-white" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-black text-blue-900 uppercase">
-                        Chọn từ sổ địa chỉ
-                      </p>
-                      <p className="text-[10px] text-blue-600 mt-0.5">
-                        {user.addresses.length} địa chỉ đã lưu
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight
-                    size={20}
-                    className="text-blue-500 group-hover:translate-x-1 transition"
-                  />
-                </button>
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin size={20} className="text-red-500" />
+                <h2 className="font-black text-lg text-gray-800 uppercase tracking-tight">
+                  Địa Chỉ Nhận Hàng
+                </h2>
               </div>
-            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <InputField
-                label="Họ và tên *"
-                required
-                value={formData.fullName}
-                onChange={(v: any) => setFormData({ ...formData, fullName: v })}
-              />
-              <InputField
-                label="Email (Nhận thông tin đơn hàng) *"
-                type="email"
-                required
-                value={formData.email}
-                onChange={(v: any) => setFormData({ ...formData, email: v })}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <InputField
-                label="Số điện thoại *"
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={(v: any) => setFormData({ ...formData, phone: v })}
-              />
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                  Khu vực *
-                </label>
-                <select
-                  className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-4 outline-none focus:ring-2 focus:ring-secondary/10 transition font-black text-sm cursor-pointer"
-                  value={formData.city}
-                  onChange={(e) =>
-                    setFormData({ ...formData, city: e.target.value })
-                  }
+              {/* Selected Address Display - Shopee style */}
+              {selectedAddress ? (
+                <div
+                  onClick={() => setShowAddressModal(true)}
+                  className="cursor-pointer group"
                 >
-                  <option value="HCM">Nội thành TP.HCM (Phí: 20k)</option>
-                  <option value="HN">Hà Nội / Ngoại thành (Phí: 35k)</option>
-                  <option value="OTHER">Các tỉnh thành khác (Phí: 50k)</option>
-                </select>
-              </div>
-            </div>
-            <div className="mb-6">
-              <InputField
-                label="Địa chỉ chi tiết (Số nhà, tên đường...) *"
-                required
-                value={formData.address}
-                onChange={(v: any) => setFormData({ ...formData, address: v })}
-              />
-            </div>
-
-            {/* Save to Address Book Options - Only for authenticated users */}
-            {isAuthenticated && user && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-2xl">
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="saveAddress"
-                    checked={saveToAddressBook}
-                    onChange={(e) => setSaveToAddressBook(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="saveAddress"
-                      className="text-xs font-black text-green-900 uppercase cursor-pointer"
-                    >
-                      Lưu địa chỉ này vào sổ địa chỉ
-                    </label>
-                    <p className="text-[10px] text-green-700 mt-1">
-                      Địa chỉ sẽ được lưu tự động khi đặt hàng thành công
-                    </p>
-                  </div>
-                  {saveToAddressBook && (
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-black text-gray-800 text-base">
+                          {selectedAddress.name}
+                        </span>
+                        <span className="text-gray-300">|</span>
+                        <span className="text-gray-600 font-semibold">
+                          (+84) {selectedAddress.phone?.slice(1)}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {getFullAddress(selectedAddress)}
+                      </p>
+                      {selectedAddress.isDefault && (
+                        <span className="inline-block mt-2 px-2 py-0.5 border border-red-500 text-red-500 text-[10px] font-bold uppercase">
+                          Mặc định
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
-                      onClick={handleSaveAddress}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition"
+                      className="text-blue-500 hover:text-blue-600 text-sm font-bold uppercase tracking-wide flex items-center gap-1 opacity-60 group-hover:opacity-100 transition"
                     >
-                      <Save size={14} />
-                      Lưu ngay
+                      Thay đổi
+                      <ChevronRight size={16} />
                     </button>
-                  )}
+                  </div>
+
+                  {/* Shipping Fee Preview */}
+                  <div className="mt-4 pt-4 border-t border-dashed border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Truck size={16} className="text-green-500" />
+                      <span>Phí vận chuyển:</span>
+                    </div>
+                    <span
+                      className={`font-black ${
+                        shippingFee === 0 ? "text-green-500" : "text-gray-800"
+                      }`}
+                    >
+                      {shippingFee === 0
+                        ? "MIỄN PHÍ"
+                        : `${shippingFee.toLocaleString()}đ`}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                Ghi chú đơn hàng
-              </label>
-              <textarea
-                className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-4 outline-none focus:ring-2 focus:ring-secondary/10 transition font-medium text-sm h-24"
-                placeholder="VD: Giao giờ hành chính, gọi trước khi đến..."
-                value={formData.note}
-                onChange={(e) =>
-                  setFormData({ ...formData, note: e.target.value })
-                }
-              />
+              ) : (
+                /* No Address Selected - Prompt to add */
+                <div
+                  onClick={() => setShowAddressModal(true)}
+                  className="cursor-pointer p-6 border-2 border-dashed border-gray-200 rounded-2xl text-center hover:border-red-300 hover:bg-red-50/30 transition group"
+                >
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-red-100 transition">
+                    <Plus
+                      size={32}
+                      className="text-gray-400 group-hover:text-red-500 transition"
+                    />
+                  </div>
+                  <p className="text-sm font-bold text-gray-600 group-hover:text-red-600 transition">
+                    {user?.addresses.length
+                      ? "Chọn địa chỉ giao hàng"
+                      : "Thêm địa chỉ giao hàng"}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">
+                    Bấm để {user?.addresses.length ? "chọn" : "thêm"} địa chỉ
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-            <h2 className="font-black text-xl mb-8 flex items-center gap-3 uppercase tracking-tight">
-              <span className="bg-secondary text-white w-8 h-8 rounded-2xl flex items-center justify-center text-sm shadow-md font-black">
-                2
-              </span>
-              Thanh toán
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <PaymentOption
-                id="cod"
-                icon={<Smartphone />}
-                label="Tiền mặt (COD)"
-                description="Thanh toán khi nhận hàng"
-                selected={formData.paymentMethod === "COD"}
-                onSelect={() =>
-                  setFormData({ ...formData, paymentMethod: "COD" })
-                }
-              />
-              <PaymentOption
-                id="online"
-                icon={<CreditCard />}
-                label="Chuyển khoản / Thẻ"
-                description="Thanh toán qua cổng online"
-                selected={formData.paymentMethod === "ONLINE"}
-                onSelect={() =>
-                  setFormData({ ...formData, paymentMethod: "ONLINE" })
-                }
-              />
+          {/* Products Section - Shopee style */}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="font-black text-lg text-gray-800 uppercase tracking-tight flex items-center gap-2">
+                <ShieldCheck size={20} className="text-red-500" />
+                Sản Phẩm
+              </h2>
             </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-1">
-          <div className="bg-white p-8 rounded-[40px] shadow-xl border border-gray-100 sticky top-24">
-            <h2 className="font-black text-xl mb-8 uppercase tracking-tight">
-              Đơn hàng của bạn
-            </h2>
-            <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="divide-y divide-gray-50">
               {items.map((item) => {
                 const itemShipping = calculateItemShipping(item);
                 return (
-                  <div key={item.variantId} className="flex gap-4">
+                  <div key={item.variantId} className="p-4 flex gap-4">
                     <img
                       src={
                         item.product.thumbnailUrl ||
-                        "https://via.placeholder.com/64"
+                        "https://via.placeholder.com/80"
                       }
-                      className="w-16 h-16 rounded-xl object-cover border"
+                      className="w-20 h-20 rounded-xl object-cover border border-gray-100"
                       alt={item.product.name}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://via.placeholder.com/64?text=No+Image";
-                      }}
                     />
-                    <div className="flex-1">
-                      <p className="font-black text-gray-800 text-[11px] line-clamp-1 uppercase">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-800 text-sm line-clamp-2">
                         {item.product.name}
                       </p>
-                      <p className="text-[9px] text-gray-400 font-black uppercase">
-                        {item.variant.size} • {item.variant.color} x{" "}
-                        {item.quantity}
+                      <p className="text-xs text-gray-400 mt-1">
+                        Phân loại: {item.variant.color}, {item.variant.size}
                       </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs font-black text-gray-900">
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-red-500 font-black">
                           {(
                             item.product.promotionalPrice ||
                             item.product.basePrice
                           ).toLocaleString()}
                           đ
-                        </p>
-                        {itemShipping > 0 && (
-                          <p className="text-[8px] font-black text-orange-600 uppercase flex items-center gap-1">
-                            <Truck size={10} /> +{itemShipping.toLocaleString()}
-                            đ
-                          </p>
-                        )}
-                        {item.product.freeShipping && (
-                          <p className="text-[8px] font-black text-green-600 uppercase flex items-center gap-1">
-                            <Truck size={10} /> FREESHIP
-                          </p>
-                        )}
+                        </span>
+                        <span className="text-gray-500 text-sm">
+                          x{item.quantity}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -672,32 +706,79 @@ export const CheckoutPage = () => {
               })}
             </div>
 
-            <div className="space-y-4 pt-6 border-t border-gray-100">
-              <div className="flex justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                <span>Tạm tính</span>
-                <span className="text-gray-800">
+            {/* Order Note */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <MessageSquare size={16} className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Lưu ý cho Người bán..."
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Method - Shopee style */}
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h2 className="font-black text-lg mb-6 uppercase tracking-tight flex items-center gap-2">
+              <CreditCard size={20} className="text-red-500" />
+              Phương Thức Thanh Toán
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PaymentOption
+                id="cod"
+                icon={<Smartphone />}
+                label="Thanh toán khi nhận hàng"
+                description="COD - Tiền mặt"
+                selected={paymentMethod === "COD"}
+                onSelect={() => setPaymentMethod("COD")}
+              />
+              <PaymentOption
+                id="online"
+                icon={<CreditCard />}
+                label="Chuyển khoản / Thẻ"
+                description="Thanh toán online"
+                selected={paymentMethod === "ONLINE"}
+                onSelect={() => setPaymentMethod("ONLINE")}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 sticky top-24">
+            <h2 className="font-black text-lg mb-6 uppercase tracking-tight">
+              Chi tiết thanh toán
+            </h2>
+
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Tổng tiền hàng</span>
+                <span className="text-gray-800 font-bold">
                   {totalPrice.toLocaleString()}đ
                 </span>
               </div>
-              <div className="flex justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                <span className="flex items-center gap-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 flex items-center gap-2">
                   <Truck size={14} /> Phí vận chuyển
                 </span>
                 <span
-                  className={
+                  className={`font-bold ${
                     shippingFee === 0 ? "text-green-500" : "text-gray-800"
-                  }
+                  }`}
                 >
                   {shippingFee === 0
-                    ? "MIỄN PHÍ"
-                    : `+${shippingFee.toLocaleString()}đ`}
+                    ? "Miễn phí"
+                    : `${shippingFee.toLocaleString()}đ`}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-6 mt-4 border-t border-gray-100">
-                <span className="font-black text-gray-800 text-lg uppercase">
-                  Tổng cộng
-                </span>
-                <span className="font-black text-3xl text-red-600 tracking-tighter">
+
+              <div className="flex justify-between items-center py-4 border-t border-gray-100">
+                <span className="text-gray-800 font-bold">Tổng thanh toán</span>
+                <span className="font-black text-2xl text-red-500">
                   {finalTotal.toLocaleString()}đ
                 </span>
               </div>
@@ -705,17 +786,17 @@ export const CheckoutPage = () => {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full mt-6 bg-secondary hover:bg-blue-600 text-white font-black py-5 rounded-[24px] shadow-2xl shadow-blue-500/30 transition transform active:scale-95 flex justify-center items-center gap-3 text-lg disabled:opacity-50"
+              disabled={loading || !selectedAddress}
+              className="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-black py-4 rounded-xl shadow-lg shadow-red-500/30 transition transform active:scale-95 flex justify-center items-center gap-3 text-base disabled:opacity-50 disabled:cursor-not-allowed uppercase"
             >
-              {loading ? (
-                <RefreshCw className="animate-spin" />
-              ) : (
-                <>
-                  <Lock size={20} /> HOÀN TẤT ĐẶT HÀNG
-                </>
-              )}
+              {loading ? <RefreshCw className="animate-spin" /> : "Đặt hàng"}
             </button>
+
+            {!selectedAddress && (
+              <p className="text-center text-red-500 text-xs mt-3 font-bold">
+                Vui lòng chọn địa chỉ giao hàng
+              </p>
+            )}
           </div>
         </div>
       </form>
@@ -733,8 +814,8 @@ export const CheckoutPage = () => {
               </h3>
               <p className="text-sm text-gray-500 mt-2">
                 Vui lòng nhập mã OTP đã gửi tới{" "}
-                <b className="text-gray-800">{formData.phone}</b> để xác thực
-                thông tin đặt hàng.
+                <b className="text-gray-800">{selectedAddress?.phone}</b> để xác
+                thực thông tin đặt hàng.
               </p>
             </div>
             <input
@@ -823,9 +904,7 @@ export const CheckoutPage = () => {
                   </p>
                   <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed">
                     Thông tin chi tiết đã được gửi tới email{" "}
-                    <b className="text-gray-700">
-                      {successOrder.customerPhone && formData.email}
-                    </b>
+                    <b className="text-gray-700">{user?.email || ""}</b>
                   </p>
                 </div>
               </div>
@@ -866,73 +945,80 @@ export const CheckoutPage = () => {
         </div>
       )}
 
-      {/* Address Book Modal */}
-      {showAddressBookModal && isAuthenticated && user && (
+      {/* Address Selection Modal - Shopee Style */}
+      {showAddressModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-8 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50 to-red-50">
               <div>
-                <h3 className="font-black text-2xl text-gray-800 uppercase tracking-tight">
-                  Sổ địa chỉ
+                <h3 className="font-black text-xl text-gray-800">
+                  Địa Chỉ Của Tôi
                 </h3>
-                <p className="text-xs text-gray-400 font-bold uppercase mt-1">
-                  Chọn địa chỉ giao hàng
+                <p className="text-xs text-gray-500 mt-1">
+                  Chọn địa chỉ nhận hàng
                 </p>
               </div>
               <button
                 onClick={() => {
-                  setShowAddressBookModal(false);
+                  setShowAddressModal(false);
                   setShowNewAddressForm(false);
                 }}
-                className="p-2 hover:bg-gray-100 rounded-xl transition"
+                className="p-2 hover:bg-white/80 rounded-xl transition"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="p-8 overflow-y-auto max-h-[calc(80vh-200px)]">
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
               {!showNewAddressForm ? (
                 <>
                   {/* Address List */}
                   <div className="space-y-3 mb-6">
-                    {user.addresses.map((addr) => (
-                      <button
+                    {user?.addresses.map((addr) => (
+                      <div
                         key={addr.id}
-                        type="button"
                         onClick={() => handleSelectAddress(addr)}
-                        className={`w-full text-left p-4 rounded-2xl border-2 transition ${
-                          selectedAddressId === addr.id
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white hover:border-blue-300"
+                        className={`p-4 rounded-2xl border-2 cursor-pointer transition ${
+                          selectedAddress?.id === addr.id
+                            ? "border-red-500 bg-red-50/50"
+                            : "border-gray-200 hover:border-red-300"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                              selectedAddress?.id === addr.id
+                                ? "border-red-500 bg-red-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {selectedAddress?.id === addr.id && (
+                              <CheckCircle2 size={12} className="text-white" />
+                            )}
+                          </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-black text-sm text-gray-800">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-gray-800">
                                 {addr.name}
                               </span>
+                              <span className="text-gray-300">|</span>
+                              <span className="text-gray-600 text-sm">
+                                (+84) {addr.phone?.slice(1)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 leading-relaxed">
+                              {getFullAddress(addr)}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
                               {addr.isDefault && (
-                                <span className="text-[10px] font-black px-2 py-0.5 bg-blue-500 text-white rounded-full">
-                                  MẶC ĐỊNH
+                                <span className="px-2 py-0.5 border border-red-500 text-red-500 text-[10px] font-bold">
+                                  Mặc định
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-600 font-bold mb-1">
-                              📞 {addr.phone}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              📍 {addr.address}
-                            </p>
                           </div>
-                          {selectedAddressId === addr.id && (
-                            <CheckCircle
-                              size={24}
-                              className="text-blue-500 flex-shrink-0"
-                            />
-                          )}
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
 
@@ -940,117 +1026,236 @@ export const CheckoutPage = () => {
                   <button
                     type="button"
                     onClick={() => setShowNewAddressForm(true)}
-                    className="w-full p-4 border-2 border-dashed border-gray-300 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition flex items-center justify-center gap-2 text-gray-600 hover:text-blue-600 font-bold"
+                    className="w-full p-4 border-2 border-dashed border-gray-300 rounded-2xl hover:border-red-400 hover:bg-red-50/30 transition flex items-center justify-center gap-2 text-gray-600 hover:text-red-500"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
-                      <span className="text-blue-600 text-xl">+</span>
-                    </div>
-                    Thêm địa chỉ mới
+                    <Plus size={20} />
+                    <span className="font-bold">Thêm Địa Chỉ Mới</span>
                   </button>
                 </>
               ) : (
-                <>
-                  {/* New Address Form */}
-                  <div className="space-y-4">
+                /* New Address Form - Shopee style with province/district/ward */
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                        Tên người nhận *
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        Họ và tên
                       </label>
                       <input
                         type="text"
-                        value={newAddress.name}
-                        onChange={(e) =>
-                          setNewAddress({ ...newAddress, name: e.target.value })
-                        }
-                        className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 transition font-black text-sm"
-                        placeholder="VD: Nguyễn Văn A"
+                        value={newAddressForm.name}
+                        onChange={(e) => {
+                          setNewAddressForm({
+                            ...newAddressForm,
+                            name: e.target.value,
+                          });
+                          setAddressErrors({ ...addressErrors, name: "" });
+                        }}
+                        className={`w-full border rounded-xl px-4 py-3 outline-none text-sm ${
+                          addressErrors.name
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 focus:border-red-400"
+                        }`}
+                        placeholder="Nhập họ và tên"
                       />
+                      {addressErrors.name && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {addressErrors.name}
+                        </p>
+                      )}
                     </div>
-
                     <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                        Số điện thoại *
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        Số điện thoại
                       </label>
                       <input
                         type="tel"
-                        value={newAddress.phone}
-                        onChange={(e) =>
-                          setNewAddress({
-                            ...newAddress,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 transition font-black text-sm"
-                        placeholder="VD: 0901234567"
+                        value={newAddressForm.phone}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, "");
+                          setNewAddressForm({
+                            ...newAddressForm,
+                            phone: value,
+                          });
+                          setAddressErrors({ ...addressErrors, phone: "" });
+                        }}
+                        maxLength={11}
+                        className={`w-full border rounded-xl px-4 py-3 outline-none text-sm ${
+                          addressErrors.phone
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 focus:border-red-400"
+                        }`}
+                        placeholder="Nhập số điện thoại"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                        Địa chỉ chi tiết *
-                      </label>
-                      <textarea
-                        value={newAddress.address}
-                        onChange={(e) =>
-                          setNewAddress({
-                            ...newAddress,
-                            address: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 transition font-medium text-sm h-24"
-                        placeholder="VD: 123 Nguyễn Văn Linh, Quận 7, TP.HCM"
-                      />
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setShowNewAddressForm(false)}
-                        className="flex-1 py-3 px-6 bg-gray-100 hover:bg-gray-200 rounded-2xl font-black text-sm uppercase transition"
-                      >
-                        Hủy
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCreateNewAddress}
-                        className="flex-1 py-3 px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-black text-sm uppercase transition"
-                      >
-                        Thêm địa chỉ
-                      </button>
+                      {addressErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {addressErrors.phone}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        Tỉnh/Thành phố
+                      </label>
+                      <select
+                        value={newAddressForm.provinceCode}
+                        onChange={(e) => handleProvinceChange(e.target.value)}
+                        className={`w-full border rounded-xl px-3 py-3 outline-none text-sm appearance-none bg-white ${
+                          addressErrors.province
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 focus:border-red-400"
+                        }`}
+                      >
+                        <option value="">Chọn tỉnh/thành</option>
+                        {PROVINCES.map((p) => (
+                          <option key={p.code} value={p.code}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      {addressErrors.province && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {addressErrors.province}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        Quận/Huyện
+                      </label>
+                      <select
+                        value={newAddressForm.districtCode}
+                        onChange={(e) => handleDistrictChange(e.target.value)}
+                        disabled={!newAddressForm.provinceCode}
+                        className={`w-full border rounded-xl px-3 py-3 outline-none text-sm appearance-none bg-white disabled:opacity-50 ${
+                          addressErrors.district
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 focus:border-red-400"
+                        }`}
+                      >
+                        <option value="">Chọn quận/huyện</option>
+                        {availableDistricts.map((d) => (
+                          <option key={d.code} value={d.code}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                      {addressErrors.district && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {addressErrors.district}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        Phường/Xã
+                      </label>
+                      <select
+                        value={newAddressForm.wardCode}
+                        onChange={(e) => handleWardChange(e.target.value)}
+                        disabled={!newAddressForm.districtCode}
+                        className={`w-full border rounded-xl px-3 py-3 outline-none text-sm appearance-none bg-white disabled:opacity-50 ${
+                          addressErrors.ward
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 focus:border-red-400"
+                        }`}
+                      >
+                        <option value="">Chọn phường/xã</option>
+                        {availableWards.map((w) => (
+                          <option key={w.code} value={w.code}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                      {addressErrors.ward && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {addressErrors.ward}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                      Địa chỉ cụ thể
+                    </label>
+                    <input
+                      type="text"
+                      value={newAddressForm.address}
+                      onChange={(e) => {
+                        setNewAddressForm({
+                          ...newAddressForm,
+                          address: e.target.value,
+                        });
+                        setAddressErrors({ ...addressErrors, address: "" });
+                      }}
+                      className={`w-full border rounded-xl px-4 py-3 outline-none text-sm ${
+                        addressErrors.address
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-red-400"
+                      }`}
+                      placeholder="Số nhà, tên đường..."
+                    />
+                    {addressErrors.address && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {addressErrors.address}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewAddressForm(false);
+                        setNewAddressForm({
+                          name: "",
+                          phone: "",
+                          address: "",
+                          provinceCode: "",
+                          districtCode: "",
+                          wardCode: "",
+                          city: "",
+                          district: "",
+                          ward: "",
+                        });
+                        setAddressErrors({});
+                      }}
+                      className="flex-1 py-3 px-6 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-sm transition"
+                    >
+                      Trở Lại
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCreateNewAddress}
+                      className="flex-1 py-3 px-6 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm transition"
+                    >
+                      Hoàn Thành
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Footer with confirm button */}
+            {!showNewAddressForm && selectedAddress && (
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <button
+                  onClick={() => setShowAddressModal(false)}
+                  className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition"
+                >
+                  Xác Nhận
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 };
-
-const InputField = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  required,
-  disabled,
-}: any) => (
-  <div>
-    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-      {label}
-    </label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      required={required}
-      disabled={disabled}
-      className="w-full border border-gray-100 bg-gray-50 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-secondary/10 transition font-black text-sm"
-    />
-  </div>
-);
 
 const PaymentOption = ({
   id,
@@ -1062,36 +1267,30 @@ const PaymentOption = ({
 }: any) => (
   <div
     onClick={onSelect}
-    className={`p-6 border-2 rounded-[32px] cursor-pointer transition flex flex-col ${
+    className={`p-4 border-2 rounded-2xl cursor-pointer transition ${
       selected
-        ? "border-secondary bg-blue-50/30"
-        : "border-gray-50 bg-white hover:border-gray-100"
+        ? "border-red-500 bg-red-50/30"
+        : "border-gray-100 bg-white hover:border-red-200"
     }`}
   >
-    <div className="flex gap-4 items-center">
+    <div className="flex gap-3 items-center">
       <div
-        className={`p-3 rounded-2xl ${
-          selected ? "bg-secondary text-white" : "bg-gray-100 text-gray-400"
+        className={`p-2 rounded-xl ${
+          selected ? "bg-red-500 text-white" : "bg-gray-100 text-gray-400"
         }`}
       >
         {icon}
       </div>
       <div className="flex-1">
-        <p className="font-black text-gray-800 text-sm uppercase leading-none">
-          {label}
-        </p>
-        <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase leading-tight">
-          {description}
-        </p>
+        <p className="font-bold text-gray-800 text-sm">{label}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{description}</p>
       </div>
       <div
-        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-          selected
-            ? "border-secondary bg-secondary text-white"
-            : "border-gray-200"
+        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+          selected ? "border-red-500 bg-red-500" : "border-gray-300"
         }`}
       >
-        {selected && <CheckCircle size={14} fill="currentColor" />}
+        {selected && <CheckCircle2 size={12} className="text-white" />}
       </div>
     </div>
   </div>

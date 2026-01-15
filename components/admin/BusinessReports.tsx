@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   AreaChart,
   Area,
@@ -32,14 +38,40 @@ import {
   Users,
   Info,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { api } from "../../services";
 import { StatCard } from "./SharedUI";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+// Helper để format tiền VND
+const formatVND = (amount: number) => {
+  return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
+};
+
+// Helper để format ngày
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+// Range labels cho PDF
+const RANGE_LABELS: Record<string, string> = {
+  today: "Hôm nay",
+  "7days": "7 ngày qua",
+  month: "Tháng này",
+  year: "Năm nay",
+};
 
 export const ReportsManager = () => {
   const [timeRange, setTimeRange] = useState("7days");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     console.log("📊 [ReportsManager] Loading reports for range:", timeRange);
@@ -56,6 +88,242 @@ export const ReportsManager = () => {
         setLoading(false);
       });
   }, [timeRange]);
+
+  // Hàm xuất PDF
+  const exportToPDF = useCallback(async () => {
+    if (!data) return;
+
+    setExporting(true);
+    try {
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let y = 20;
+
+      // Title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("BAO CAO KINH DOANH", pageWidth / 2, y, { align: "center" });
+      y += 10;
+
+      // Subtitle với thời gian
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Ky bao cao: ${RANGE_LABELS[timeRange] || timeRange}`,
+        pageWidth / 2,
+        y,
+        { align: "center" }
+      );
+      y += 6;
+      doc.setFontSize(10);
+      doc.text(`Ngay xuat: ${formatDate(new Date())}`, pageWidth / 2, y, {
+        align: "center",
+      });
+      y += 15;
+
+      // Metrics Summary
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("TONG QUAN", 14, y);
+      y += 8;
+
+      // Metrics table
+      autoTable(doc, {
+        startY: y,
+        head: [["Chi tieu", "Gia tri", "Tang truong"]],
+        body: [
+          [
+            "Doanh thu thuan",
+            formatVND(data.metrics.netRevenue),
+            `${data.metrics.growth.revenue > 0 ? "+" : ""}${
+              data.metrics.growth.revenue
+            }%`,
+          ],
+          [
+            "Loi nhuan gop",
+            formatVND(data.metrics.profit),
+            `${data.metrics.growth.profit > 0 ? "+" : ""}${
+              data.metrics.growth.profit
+            }%`,
+          ],
+          [
+            "Tong don hang",
+            data.metrics.orderTotal.toString(),
+            `${data.metrics.growth.orders > 0 ? "+" : ""}${
+              data.metrics.growth.orders
+            }%`,
+          ],
+          [
+            "Don tra hang",
+            data.metrics.returnCount.toString(),
+            `${data.metrics.returnRate}%`,
+          ],
+          [
+            "Gia tri trung binh/don",
+            formatVND(data.metrics.avgOrderValue),
+            "-",
+          ],
+        ],
+        theme: "striped",
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 10 },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 15;
+
+      // Top Products
+      if (data.topProducts && data.topProducts.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("TOP SAN PHAM BAN CHAY", 14, y);
+        y += 8;
+
+        autoTable(doc, {
+          startY: y,
+          head: [["#", "Ten san pham", "Da ban", "Doanh thu"]],
+          body: data.topProducts
+            .slice(0, 10)
+            .map((p: any, idx: number) => [
+              (idx + 1).toString(),
+              p.name.substring(0, 40) + (p.name.length > 40 ? "..." : ""),
+              p.sold.toString(),
+              formatVND(p.revenue),
+            ]),
+          theme: "striped",
+          headStyles: { fillColor: [16, 185, 129] },
+          styles: { fontSize: 9 },
+          columnStyles: {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 90 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 45 },
+          },
+        });
+
+        y = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // Category Breakdown
+      if (data.categoryBreakdown && data.categoryBreakdown.length > 0) {
+        if (y > 220) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("DOANH THU THEO DANH MUC", 14, y);
+        y += 8;
+
+        const totalCategoryValue = data.categoryBreakdown.reduce(
+          (sum: number, c: any) => sum + c.value,
+          0
+        );
+        autoTable(doc, {
+          startY: y,
+          head: [["Danh muc", "Doanh thu", "Ty le"]],
+          body: data.categoryBreakdown.map((c: any) => [
+            c.name,
+            formatVND(c.value),
+            `${
+              totalCategoryValue > 0
+                ? Math.round((c.value / totalCategoryValue) * 100)
+                : 0
+            }%`,
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [245, 158, 11] },
+          styles: { fontSize: 10 },
+        });
+
+        y = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // Payment Methods
+      if (data.paymentData && data.paymentData.length > 0) {
+        if (y > 220) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("PHUONG THUC THANH TOAN", 14, y);
+        y += 8;
+
+        autoTable(doc, {
+          startY: y,
+          head: [["Phuong thuc", "So don", "Tong tien"]],
+          body: data.paymentData.map((p: any) => [
+            p.method,
+            p.count.toString(),
+            formatVND(p.amount),
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [139, 92, 246] },
+          styles: { fontSize: 10 },
+        });
+
+        y = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // Revenue Chart Data (as table)
+      if (data.chartData && data.chartData.length > 0) {
+        if (y > 180) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("CHI TIET DOANH THU THEO NGAY", 14, y);
+        y += 8;
+
+        autoTable(doc, {
+          startY: y,
+          head: [["Ngay", "Doanh thu", "So don"]],
+          body: data.chartData.map((d: any) => [
+            d.date,
+            formatVND(d.revenue),
+            d.orders.toString(),
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [6, 182, 212] },
+          styles: { fontSize: 9 },
+        });
+      }
+
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `Trang ${i}/${pageCount}`,
+          pageWidth - 20,
+          doc.internal.pageSize.getHeight() - 10
+        );
+        doc.text(
+          "Sport Shop - Bao cao kinh doanh",
+          14,
+          doc.internal.pageSize.getHeight() - 10
+        );
+      }
+
+      // Save
+      const fileName = `bao-cao-kinh-doanh-${timeRange}-${
+        new Date().toISOString().split("T")[0]
+      }.pdf`;
+      doc.save(fileName);
+      console.log("✅ PDF exported:", fileName);
+    } catch (error) {
+      console.error("❌ Error exporting PDF:", error);
+      alert("Có lỗi khi xuất PDF. Vui lòng thử lại.");
+    } finally {
+      setExporting(false);
+    }
+  }, [data, timeRange]);
 
   if (loading && !data)
     return (
@@ -105,6 +373,25 @@ export const ReportsManager = () => {
           </div>
           <button className="p-3.5 bg-white border border-gray-100 rounded-2xl text-slate-400 hover:text-secondary transition shadow-sm">
             <Download size={20} />
+          </button>
+          <button
+            onClick={exportToPDF}
+            disabled={exporting || !data}
+            className={`flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all ${
+              exporting
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:from-blue-700 hover:to-blue-800"
+            }`}
+            title="Xuất báo cáo PDF"
+          >
+            {exporting ? (
+              <RefreshCw className="animate-spin" size={18} />
+            ) : (
+              <FileText size={18} />
+            )}
+            <span className="text-[10px] font-black uppercase tracking-wider">
+              {exporting ? "Đang xuất..." : "Xuất PDF"}
+            </span>
           </button>
         </div>
       </div>

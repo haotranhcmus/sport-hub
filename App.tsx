@@ -2,6 +2,7 @@ import React from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import { Layout } from "./components/layout/Layout";
 import { HomePage } from "./pages/HomePage";
 import { ProductListPage } from "./pages/ProductListPage";
@@ -67,90 +68,95 @@ const App = () => {
   return (
     <HashRouter>
       <AuthProvider>
-        <CartProvider>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route
-                path="/"
-                element={
-                  <StaffRedirect>
-                    <HomePage />
-                  </StaffRedirect>
-                }
-              />
-              <Route
-                path="/products"
-                element={
-                  <StaffRedirect>
-                    <ProductListPage />
-                  </StaffRedirect>
-                }
-              />
-              <Route
-                path="/products/:slug"
-                element={
-                  <StaffRedirect>
-                    <ProductDetailPage />
-                  </StaffRedirect>
-                }
-              />
-              <Route
-                path="/cart"
-                element={
-                  <ProtectedRoute allowGuest>
-                    <CartPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/checkout"
-                element={
-                  <ProtectedRoute allowGuest>
-                    <CheckoutPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment-gateway"
-                element={
-                  <ProtectedRoute allowGuest>
-                    <PaymentGateway />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/tracking" element={<OrderTrackingPage />} />
-              {/* Cho phép cả khách vãng lai và thành viên xem chi tiết đơn hàng */}
-              <Route
-                path="/orders/:code"
-                element={
-                  <ProtectedRoute allowGuest>
-                    <OrderDetailPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute role="ADMIN">
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Route>
-          </Routes>
-        </CartProvider>
+        <NotificationProvider>
+          <CartProvider>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route
+                  path="/"
+                  element={
+                    <StaffRedirect>
+                      <HomePage />
+                    </StaffRedirect>
+                  }
+                />
+                <Route
+                  path="/products"
+                  element={
+                    <StaffRedirect>
+                      <ProductListPage />
+                    </StaffRedirect>
+                  }
+                />
+                <Route
+                  path="/products/:slug"
+                  element={
+                    <StaffRedirect>
+                      <ProductDetailPage />
+                    </StaffRedirect>
+                  }
+                />
+                <Route
+                  path="/cart"
+                  element={
+                    <ProtectedRoute allowGuest>
+                      <CartPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute allowGuest>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payment-gateway"
+                  element={
+                    <ProtectedRoute allowGuest>
+                      <PaymentGateway />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route
+                  path="/forgot-password"
+                  element={<ForgotPasswordPage />}
+                />
+                <Route path="/tracking" element={<OrderTrackingPage />} />
+                {/* Cho phép cả khách vãng lai và thành viên xem chi tiết đơn hàng */}
+                <Route
+                  path="/orders/:code"
+                  element={
+                    <ProtectedRoute allowGuest>
+                      <OrderDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute role="ADMIN">
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Route>
+            </Routes>
+          </CartProvider>
+        </NotificationProvider>
       </AuthProvider>
     </HashRouter>
   );

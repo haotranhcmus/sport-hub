@@ -600,4 +600,65 @@ export const productService = {
 
     return data;
   },
+
+  // ========================================
+  // VARIANT MANAGEMENT
+  // ========================================
+
+  createVariant: async (variantData: {
+    productId: string;
+    sku: string;
+    size: string;
+    color: string;
+    stockQuantity: number;
+    priceAdjustment: number;
+    imageUrl?: string | null;
+    status?: string;
+  }) => {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("ProductVariant")
+      .insert({
+        id: crypto.randomUUID(),
+        productId: variantData.productId,
+        sku: variantData.sku,
+        size: variantData.size,
+        color: variantData.color,
+        stockQuantity: variantData.stockQuantity || 0,
+        priceAdjustment: variantData.priceAdjustment || 0,
+        imageUrl: variantData.imageUrl || null,
+        status: variantData.status || "active",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ [CREATE VARIANT] Error:", error);
+      throw new Error(error.message);
+    }
+
+    console.log("✅ [CREATE VARIANT] Success:", data.sku);
+    return data;
+  },
+
+  updateVariant: async (variantId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("ProductVariant")
+      .update({
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", variantId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ [UPDATE VARIANT] Error:", error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  },
 };

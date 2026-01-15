@@ -273,29 +273,32 @@ export const ProductDetailPage = () => {
         .map((v) => v.color) || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500">
-      <nav className="text-xs font-bold text-gray-400 flex gap-2 items-center uppercase tracking-widest">
+    <div className="max-w-7xl mx-auto space-y-4 animate-in fade-in duration-500">
+      {/* Breadcrumb - Compact */}
+      <nav className="text-[10px] font-bold text-gray-400 flex gap-1.5 items-center uppercase tracking-widest">
         <Link to="/" className="hover:text-secondary transition">
           Trang chủ
         </Link>
-        <ChevronRight size={12} />
+        <ChevronRight size={10} />
         <Link to="/products" className="hover:text-secondary transition">
           Sản phẩm
         </Link>
-        <ChevronRight size={12} />
-        <span className="text-gray-800 truncate max-w-[250px]">
+        <ChevronRight size={10} />
+        <span className="text-gray-800 truncate max-w-[200px]">
           {product.name}
         </span>
       </nav>
 
-      <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-          <div className="p-6 md:p-8 bg-gray-50 flex flex-col items-center sticky top-0 h-fit">
-            <div className="relative aspect-square w-full max-w-[500px] bg-white rounded-[32px] shadow-sm overflow-hidden border border-gray-100 group">
+      {/* Main Product Card - Compact Layout */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+          {/* Image Gallery - Narrower */}
+          <div className="lg:col-span-5 p-4 bg-gray-50 flex flex-col">
+            <div className="relative aspect-square w-full bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 group">
               <img
                 src={activeImage}
                 alt={product.name}
-                className="w-full h-full object-contain p-6 group-hover:scale-110 transition duration-700"
+                className="w-full h-full object-contain p-4 group-hover:scale-105 transition duration-500"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   if (!target.src.includes("placeholder")) {
@@ -305,25 +308,26 @@ export const ProductDetailPage = () => {
                 }}
               />
               {discountPercent > 0 && (
-                <div className="absolute top-4 left-4 bg-red-600 text-white text-sm font-black px-4 py-1.5 rounded-full shadow-xl">
+                <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg">
                   -{discountPercent}%
                 </div>
               )}
               {product.freeShipping && (
-                <div className="absolute bottom-4 left-4 bg-blue-500 text-white text-[10px] font-black px-4 py-2 rounded-full shadow-xl uppercase tracking-widest flex items-center gap-2">
-                  <Truck size={14} /> Freeship
+                <div className="absolute bottom-3 left-3 bg-blue-500 text-white text-[9px] font-black px-2.5 py-1.5 rounded-full shadow-lg uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck size={12} /> Free
                 </div>
               )}
             </div>
-            <div className="flex gap-3 mt-6">
+            {/* Thumbnails - Horizontal Scroll */}
+            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
               {productImages.map((imgUrl, i) => (
                 <div
                   key={i}
                   onClick={() => setActiveImage(imgUrl)}
-                  className={`w-16 h-16 rounded-xl border-2 transition cursor-pointer overflow-hidden transform active:scale-90 ${
+                  className={`w-14 h-14 rounded-lg border-2 transition cursor-pointer overflow-hidden flex-shrink-0 ${
                     activeImage === imgUrl
-                      ? "border-secondary ring-4 ring-secondary/10"
-                      : "border-white hover:border-gray-200"
+                      ? "border-secondary ring-2 ring-secondary/20"
+                      : "border-gray-100 hover:border-gray-200"
                   }`}
                 >
                   <img
@@ -343,102 +347,100 @@ export const ProductDetailPage = () => {
             </div>
           </div>
 
-          <div className="p-6 md:p-8 space-y-6 flex flex-col">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] bg-blue-50 px-3 py-1 rounded-full">
-                  Chính hãng 100%
-                </span>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  MÃ: {product.productCode}
-                </span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-[1.1] tracking-tight">
-                {product.name}
-              </h1>
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center text-yellow-400">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      size={16}
-                      fill={s <= 4.8 ? "currentColor" : "none"}
-                    />
-                  ))}
-                  <span className="text-gray-900 font-black ml-2 text-sm">
-                    4.8
+          {/* Product Info - Wider, Compact */}
+          <div className="lg:col-span-7 p-4 md:p-5 flex flex-col">
+            {/* Header - Inline */}
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-black text-secondary uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-full">
+                    Chính hãng
+                  </span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                    MÃ: {product.productCode}
                   </span>
                 </div>
-                <span className="text-gray-200">|</span>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  Đã bán: <b className="text-gray-800">{product.totalSold}</b>
-                </span>
+                <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight">
+                  {product.name}
+                </h1>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <div className="flex items-end gap-3">
-                <span className="text-3xl font-black text-red-600 tracking-tighter">
-                  {finalPrice.toLocaleString()}đ
+            {/* Rating & Sales - Inline */}
+            <div className="flex items-center gap-3 flex-wrap mb-3">
+              <div className="flex items-center text-yellow-400">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    size={14}
+                    fill={s <= 4.8 ? "currentColor" : "none"}
+                  />
+                ))}
+                <span className="text-gray-900 font-black ml-1.5 text-xs">
+                  4.8
                 </span>
-                {discountPercent > 0 && (
-                  <span className="text-lg text-gray-300 line-through font-bold mb-1">
-                    {product.basePrice.toLocaleString()}đ
-                  </span>
-                )}
               </div>
-              <div className="flex items-center gap-3 mt-2 flex-wrap">
-                {product.freeShipping && (
-                  <div className="flex items-center gap-1.5 text-blue-600">
-                    <Truck size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                      Miễn phí vận chuyển
-                    </span>
-                  </div>
-                )}
-                {product.allowReturn && (
-                  <div className="flex items-center gap-1.5 text-green-600">
-                    <RotateCcw size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                      Đổi trả: {product.returnPeriod} ngày
-                    </span>
-                  </div>
-                )}
-              </div>
+              <span className="text-gray-200">|</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Đã bán: <b className="text-gray-800">{product.totalSold}</b>
+              </span>
             </div>
 
-            <div className="h-px bg-gray-100"></div>
+            {/* Price & Policies - Horizontal */}
+            <div className="flex flex-wrap items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+              <span className="text-2xl font-black text-red-600 tracking-tight">
+                {finalPrice.toLocaleString()}đ
+              </span>
+              {discountPercent > 0 && (
+                <span className="text-base text-gray-300 line-through font-bold">
+                  {product.basePrice.toLocaleString()}đ
+                </span>
+              )}
+              {/* Policies - Inline with price */}
+              {product.freeShipping && (
+                <span className="flex items-center gap-1 text-blue-600 text-[9px] font-black uppercase bg-blue-50 px-2 py-1 rounded-full">
+                  <Truck size={12} /> Free Ship
+                </span>
+              )}
+              {product.allowReturn && (
+                <span className="flex items-center gap-1 text-green-600 text-[9px] font-black uppercase bg-green-50 px-2 py-1 rounded-full">
+                  <RotateCcw size={12} /> Đổi trả {product.returnPeriod} ngày
+                </span>
+              )}
+            </div>
 
             {isStaff ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-10 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200 space-y-4">
-                <Briefcase size={48} className="text-slate-300" />
+              <div className="flex-1 flex items-center justify-center p-6 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
                 <div className="text-center">
-                  <p className="font-black text-slate-800 uppercase tracking-tight">
+                  <Briefcase
+                    size={32}
+                    className="text-slate-300 mx-auto mb-2"
+                  />
+                  <p className="font-black text-slate-800 uppercase tracking-tight text-sm">
                     Giao diện Nhân sự
                   </p>
-                  <p className="text-xs text-slate-500 font-medium max-w-[250px] mt-1 italic">
-                    Bạn đang truy cập với vai trò {user?.role.toUpperCase()}.
-                    Chức năng mua hàng và giỏ hàng đã bị ẩn.
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Chức năng mua hàng đã bị ẩn
                   </p>
+                  <Link
+                    to="/admin"
+                    className="inline-block mt-3 px-4 py-2 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase"
+                  >
+                    Về Quản trị
+                  </Link>
                 </div>
-                <Link
-                  to="/admin"
-                  className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl"
-                >
-                  Về trang Quản trị
-                </Link>
               </div>
             ) : (
               <>
-                <div className="space-y-5">
+                {/* Variants Selection - Compact Horizontal Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  {/* Color Selector */}
                   <div>
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">
-                      Màu sắc:{" "}
-                      <b className="text-gray-800 ml-1">{selectedColor}</b>
+                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-2">
+                      Màu sắc: <b className="text-gray-800">{selectedColor}</b>
                     </h4>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {uniqueColors.map((color) => {
-                        // Check if this color is available (considering selected size)
                         const isAvailable =
                           availableColorsForSize.includes(color);
                         return (
@@ -446,7 +448,6 @@ export const ProductDetailPage = () => {
                             key={color}
                             onClick={() => {
                               setSelectedColor(color);
-                              // Only reset size if current size is not available with new color
                               if (selectedSize) {
                                 const variantExists = product.variants?.some(
                                   (v) =>
@@ -455,7 +456,6 @@ export const ProductDetailPage = () => {
                                     v.stockQuantity > 0
                                 );
                                 if (!variantExists) {
-                                  // Try to find a size that works with this color
                                   const availableSize = product.variants?.find(
                                     (v) =>
                                       v.color === color && v.stockQuantity > 0
@@ -464,12 +464,12 @@ export const ProductDetailPage = () => {
                                 }
                               }
                             }}
-                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition border-2 ${
                               !isAvailable
                                 ? "opacity-40 border-gray-100 text-gray-400 cursor-not-allowed line-through"
                                 : selectedColor === color
-                                ? "border-secondary bg-secondary text-white shadow-xl shadow-blue-500/20"
-                                : "border-gray-100 hover:border-gray-200 text-gray-500"
+                                ? "border-secondary bg-secondary text-white shadow-md"
+                                : "border-gray-100 hover:border-gray-200 text-gray-600"
                             }`}
                             disabled={!isAvailable}
                           >
@@ -479,26 +479,27 @@ export const ProductDetailPage = () => {
                       })}
                     </div>
                   </div>
+
+                  {/* Size Selector */}
                   <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-wider">
                         Kích cỡ:{" "}
-                        <b className="text-gray-800 ml-1">
-                          {selectedSize || "Chọn size"}
+                        <b className="text-gray-800">
+                          {selectedSize || "Chọn"}
                         </b>
                       </h4>
                       {sizeGuide && (
                         <button
                           onClick={() => setShowSizeGuideModal(true)}
-                          className="text-[10px] font-black text-secondary uppercase tracking-widest flex items-center gap-2 hover:underline"
+                          className="text-[9px] font-bold text-secondary flex items-center gap-1 hover:underline"
                         >
-                          <Ruler size={14} /> Hướng dẫn chọn size
+                          <Ruler size={12} /> Size Guide
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {uniqueSizes.map((size) => {
-                        // Check if this size is available (considering selected color)
                         const isAvailable =
                           availableSizesForColor.includes(size);
                         return (
@@ -507,7 +508,6 @@ export const ProductDetailPage = () => {
                             disabled={!isAvailable}
                             onClick={() => {
                               setSelectedSize(size);
-                              // Only reset color if current color is not available with new size
                               if (selectedColor) {
                                 const variantExists = product.variants?.some(
                                   (v) =>
@@ -516,7 +516,6 @@ export const ProductDetailPage = () => {
                                     v.stockQuantity > 0
                                 );
                                 if (!variantExists) {
-                                  // Try to find a color that works with this size
                                   const availableColor = product.variants?.find(
                                     (v) =>
                                       v.size === size && v.stockQuantity > 0
@@ -525,11 +524,11 @@ export const ProductDetailPage = () => {
                                 }
                               }
                             }}
-                            className={`w-12 h-12 flex items-center justify-center rounded-xl text-sm font-black transition-all border-2 ${
+                            className={`w-10 h-10 flex items-center justify-center rounded-lg text-xs font-black transition border-2 ${
                               !isAvailable
                                 ? "opacity-30 bg-gray-50 border-gray-100 cursor-not-allowed line-through"
                                 : selectedSize === size
-                                ? "border-primary bg-primary text-white shadow-xl"
+                                ? "border-primary bg-primary text-white shadow-md"
                                 : "border-gray-100 hover:border-primary text-gray-600"
                             }`}
                           >
@@ -541,24 +540,18 @@ export const ProductDetailPage = () => {
                   </div>
                 </div>
 
-                <div className="pt-4 space-y-3 mt-auto">
-                  {/* Stock Status Banner */}
+                {/* Action Area - Compact & Always Visible */}
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  {/* Stock Status */}
                   {selectedVariant && selectedVariant.stockQuantity === 0 && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 animate-in fade-in">
+                    <div className="p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
                       <AlertCircle
-                        className="text-red-500 shrink-0 mt-0.5"
-                        size={20}
+                        className="text-red-500 shrink-0"
+                        size={14}
                       />
-                      <div>
-                        <p className="text-sm font-black text-red-700 uppercase tracking-tight">
-                          Tạm hết hàng
-                        </p>
-                        <p className="text-xs text-red-600 mt-1">
-                          Phân loại "{selectedColor} / {selectedSize}" hiện đã
-                          hết hàng. Vui lòng chọn phân loại khác hoặc quay lại
-                          sau.
-                        </p>
-                      </div>
+                      <p className="text-[10px] font-bold text-red-600">
+                        Phân loại "{selectedColor}/{selectedSize}" đã hết hàng
+                      </p>
                     </div>
                   )}
 
@@ -566,28 +559,26 @@ export const ProductDetailPage = () => {
                   {selectedVariant &&
                     selectedVariant.stockQuantity > 0 &&
                     selectedVariant.stockQuantity <= 5 && (
-                      <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-center gap-2 animate-in fade-in">
+                      <div className="p-2 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
                         <AlertCircle
                           className="text-orange-500 shrink-0"
-                          size={16}
+                          size={14}
                         />
-                        <p className="text-xs font-bold text-orange-700">
-                          Chỉ còn{" "}
-                          <span className="text-orange-900">
-                            {selectedVariant.stockQuantity}
-                          </span>{" "}
-                          sản phẩm - Đặt ngay!
+                        <p className="text-[10px] font-bold text-orange-700">
+                          Chỉ còn <b>{selectedVariant.stockQuantity}</b> sản
+                          phẩm - Đặt ngay!
                         </p>
                       </div>
                     )}
 
-                  <div className="flex items-center gap-4">
-                    {/* Quantity Selector - Disabled when out of stock */}
+                  {/* Quantity + Stock + Add Button - Horizontal */}
+                  <div className="flex items-center gap-3">
+                    {/* Quantity Selector */}
                     <div
-                      className={`flex items-center rounded-xl p-1 h-12 ${
+                      className={`flex items-center rounded-lg border h-10 ${
                         selectedVariant?.stockQuantity === 0
-                          ? "bg-gray-200 opacity-50 cursor-not-allowed"
-                          : "bg-gray-100"
+                          ? "opacity-50"
+                          : "border-gray-200"
                       }`}
                     >
                       <button
@@ -596,106 +587,92 @@ export const ProductDetailPage = () => {
                           !selectedVariant ||
                           selectedVariant.stockQuantity === 0
                         }
-                        className="w-10 h-full hover:bg-white rounded-lg flex items-center justify-center text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        className="w-8 h-full hover:bg-gray-100 flex items-center justify-center text-gray-500 disabled:cursor-not-allowed"
                       >
                         -
                       </button>
-                      <span className="w-10 text-center font-black text-lg text-gray-800">
+                      <span className="w-8 text-center font-bold text-sm">
                         {quantity}
                       </span>
                       <button
                         onClick={() => {
-                          // Limit quantity to stock
                           const maxQty = selectedVariant?.stockQuantity || 1;
-                          if (quantity < maxQty) {
-                            setQuantity(quantity + 1);
-                          }
+                          if (quantity < maxQty) setQuantity(quantity + 1);
                         }}
                         disabled={
                           !selectedVariant ||
                           selectedVariant.stockQuantity === 0 ||
                           quantity >= (selectedVariant?.stockQuantity || 0)
                         }
-                        className="w-10 h-full hover:bg-white rounded-lg flex items-center justify-center text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:opacity-50"
+                        className="w-8 h-full hover:bg-gray-100 flex items-center justify-center text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         +
                       </button>
                     </div>
-                    <div className="text-xs font-bold">
+
+                    {/* Stock Status - Compact */}
+                    <div className="text-[10px] font-bold">
                       {selectedVariant ? (
                         selectedVariant.stockQuantity > 0 ? (
-                          <div className="space-y-1">
-                            <span className="text-green-500 flex items-center gap-2 uppercase tracking-widest">
-                              <ShieldCheck size={16} /> Còn hàng
-                            </span>
-                            <span className="text-gray-400 text-[10px]">
-                              Tồn kho: {selectedVariant.stockQuantity}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-red-500 flex items-center gap-2 uppercase tracking-widest">
-                            <AlertCircle size={16} /> Hết hàng
+                          <span className="text-green-600 flex items-center gap-1">
+                            <ShieldCheck size={12} /> Còn{" "}
+                            {selectedVariant.stockQuantity}
                           </span>
+                        ) : (
+                          <span className="text-red-500">Hết hàng</span>
                         )
                       ) : (
-                        <span className="text-orange-400 animate-pulse">
-                          Vui lòng chọn phân loại
-                        </span>
+                        <span className="text-orange-400">Chọn phân loại</span>
                       )}
                     </div>
+
+                    {/* Add to Cart - Prominent Button */}
+                    <button
+                      onClick={() => {
+                        if (!selectedVariant) {
+                          alert("Vui lòng chọn màu sắc và kích cỡ!");
+                          return;
+                        }
+                        if (selectedVariant.stockQuantity === 0) {
+                          alert(
+                            `Phân loại "${selectedColor}/${selectedSize}" đã hết hàng.`
+                          );
+                          return;
+                        }
+                        if (quantity > selectedVariant.stockQuantity) {
+                          alert(
+                            `Số lượng tối đa có thể đặt là ${selectedVariant.stockQuantity}`
+                          );
+                          setQuantity(selectedVariant.stockQuantity);
+                          return;
+                        }
+                        addToCart(product, selectedVariant, quantity);
+                      }}
+                      disabled={
+                        !selectedVariant || selectedVariant.stockQuantity === 0
+                      }
+                      className={`flex-1 h-10 rounded-lg font-black text-sm flex items-center justify-center gap-2 transition ${
+                        !selectedVariant || selectedVariant.stockQuantity === 0
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          : "bg-secondary hover:bg-blue-600 text-white shadow-lg"
+                      }`}
+                    >
+                      {!selectedVariant ? (
+                        <>Chọn phân loại</>
+                      ) : selectedVariant.stockQuantity === 0 ? (
+                        <>Hết hàng</>
+                      ) : (
+                        <>
+                          <ShoppingCart size={16} /> THÊM VÀO GIỎ
+                        </>
+                      )}
+                    </button>
                   </div>
 
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => {
-                      if (!selectedVariant) {
-                        alert("Vui lòng chọn màu sắc và kích cỡ!");
-                        return;
-                      }
-                      if (selectedVariant.stockQuantity === 0) {
-                        alert(
-                          `Phân loại "${selectedColor} / ${selectedSize}" đã hết hàng. Vui lòng chọn phân loại khác.`
-                        );
-                        return;
-                      }
-                      if (quantity > selectedVariant.stockQuantity) {
-                        alert(
-                          `Số lượng tối đa có thể đặt là ${selectedVariant.stockQuantity}`
-                        );
-                        setQuantity(selectedVariant.stockQuantity);
-                        return;
-                      }
-                      addToCart(product, selectedVariant, quantity);
-                    }}
-                    disabled={
-                      !selectedVariant || selectedVariant.stockQuantity === 0
-                    }
-                    className={`w-full h-14 rounded-[20px] font-black text-base flex items-center justify-center gap-3 transition-all transform active:scale-95 ${
-                      !selectedVariant || selectedVariant.stockQuantity === 0
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
-                        : "bg-secondary hover:bg-blue-600 text-white shadow-2xl shadow-blue-500/30"
-                    }`}
-                  >
-                    {!selectedVariant ? (
-                      <>
-                        <AlertCircle size={22} /> CHỌN PHÂN LOẠI
-                      </>
-                    ) : selectedVariant.stockQuantity === 0 ? (
-                      <>
-                        <AlertCircle size={22} /> TẠM HẾT HÀNG
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart size={22} /> THÊM VÀO GIỎ
-                      </>
-                    )}
-                  </button>
-
-                  {/* Notify when back in stock - for out of stock items */}
+                  {/* Notify when back in stock */}
                   {selectedVariant && selectedVariant.stockQuantity === 0 && (
-                    <button className="w-full py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition flex items-center justify-center gap-2">
-                      <RefreshCw size={16} />
-                      Thông báo khi có hàng
+                    <button className="w-full py-2 border border-gray-200 text-gray-500 rounded-lg text-[10px] font-bold uppercase hover:border-secondary hover:text-secondary transition flex items-center justify-center gap-1.5">
+                      <RefreshCw size={12} /> Thông báo khi có hàng
                     </button>
                   )}
                 </div>

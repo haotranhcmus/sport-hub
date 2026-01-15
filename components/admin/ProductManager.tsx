@@ -33,6 +33,7 @@ import {
   Truck,
   RotateCcw,
   Ruler,
+  FileSpreadsheet,
 } from "lucide-react";
 import { api } from "../../services";
 import {
@@ -55,6 +56,7 @@ import {
 } from "../../hooks/useInventoryQuery";
 import { uploadImage, replaceImage } from "../../lib/storage";
 import { ProductFormTabs } from "./ProductFormTabs"; // ✅ NEW: Import new component
+import { BulkImportWizard } from "./BulkImportWizard"; // ✅ Bulk Import
 
 const handleFileRead = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -68,6 +70,7 @@ const handleFileRead = (file: File): Promise<string> => {
 export const ProductManager = () => {
   const { user: currentUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -134,12 +137,20 @@ export const ProductManager = () => {
               Quản lý danh sách sản phẩm và biến thể SKU
             </p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="px-10 py-4 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase shadow-xl flex items-center gap-3 active:scale-95 transition"
-          >
-            <Plus size={18} /> Thêm sản phẩm mới
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-[24px] font-black text-xs uppercase shadow-xl flex items-center gap-3 active:scale-95 transition hover:shadow-2xl"
+            >
+              <FileSpreadsheet size={18} /> Import Excel
+            </button>
+            <button
+              onClick={handleCreate}
+              className="px-10 py-4 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase shadow-xl flex items-center gap-3 active:scale-95 transition"
+            >
+              <Plus size={18} /> Thêm sản phẩm mới
+            </button>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex items-center gap-4">
@@ -269,6 +280,18 @@ export const ProductManager = () => {
             }}
           />
         )}
+
+        {/* Bulk Import Wizard */}
+        {showBulkImport && (
+          <BulkImportWizard
+            categories={categories}
+            brands={brands}
+            onClose={() => setShowBulkImport(false)}
+            onSuccess={() => {
+              refetchProducts();
+            }}
+          />
+        )}
       </div>
     </>
   );
@@ -282,7 +305,15 @@ const ProductFormModal = ({
   sizeGuides,
   onClose,
   onSave,
-}: any) => {
+}: {
+  product?: Product | null;
+  categories: Category[];
+  brands: Brand[];
+  allAttributes: ProductAttribute[];
+  sizeGuides: SizeGuide[];
+  onClose: () => void;
+  onSave: (product?: Product) => void;
+}) => {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"info" | "variants">("info");
   const [loading, setLoading] = useState(false);
@@ -420,7 +451,7 @@ const ProductFormModal = ({
   const handleGalleryImagesUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const files = Array.from(e.target.files || []);
+    const files: File[] = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
     // Validate total images (max 8 including thumbnail)

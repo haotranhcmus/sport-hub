@@ -167,6 +167,12 @@ model User {
   updatedAt  DateTime    @updatedAt
   orders     Order[]
   systemLogs SystemLog[]
+  
+  // Notification & Chat relations
+  notifications   Notification[]
+  customerChats   ChatRoom[]      @relation("CustomerChats")
+  staffChats      ChatRoom[]      @relation("StaffChats")
+  chatMessages    ChatMessage[]
 
   @@index([email])
   @@index([role])
@@ -449,4 +455,97 @@ enum SystemLogAction {
   PAYMENT
   STOCK_CHANGE
   STOCK_ADJUST
+}
+
+// ========================================
+// NOTIFICATION SYSTEM
+// ========================================
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?
+  isRead      Boolean          @default(false)
+  actionUrl   String?
+  createdAt   DateTime         @default(now())
+  
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_CONFIRMED
+  ORDER_SHIPPING
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  RETURN_APPROVED
+  RETURN_REJECTED
+  PAYMENT_RECEIVED
+  PROMOTION
+  SYSTEM
+  CHAT_MESSAGE
+  LOW_STOCK
+  NEW_ORDER
+  NEW_RETURN
+}
+
+// ========================================
+// CHAT SYSTEM
+// ========================================
+
+model ChatRoom {
+  id          String     @id @default(uuid())
+  customerId  String
+  staffId     String?
+  orderCode   String?
+  status      ChatStatus @default(WAITING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  customer    User       @relation("CustomerChats", fields: [customerId], references: [id])
+  staff       User?      @relation("StaffChats", fields: [staffId], references: [id])
+  messages    ChatMessage[]
+  
+  @@index([customerId])
+  @@index([staffId])
+  @@index([status])
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  roomId    String
+  senderId  String
+  content   String
+  type      MessageType @default(TEXT)
+  imageUrl  String?
+  isRead    Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  
+  room      ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User        @relation(fields: [senderId], references: [id])
+  
+  @@index([roomId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+enum ChatStatus {
+  WAITING
+  ACTIVE
+  RESOLVED
+  CLOSED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+  ORDER_INFO
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -22,8 +22,13 @@ import {
   Box,
   BarChart3,
   Cog,
+  MessageCircle,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
+import { NotificationBell } from "../components/common/NotificationBell";
+import { chatService } from "../services/chat.service";
 
 // Import Separated Components
 import {
@@ -51,6 +56,7 @@ import {
 } from "../components/admin/SystemAdmin";
 import { SizeGuideManager } from "../components/admin/SizeGuideManager";
 import { ReturnManager } from "../components/admin/ReturnManager";
+import { AdminChatDashboard } from "../components/admin/AdminChatDashboard";
 
 // Helper function để lấy breadcrumb path
 const getBreadcrumb = (view: ViewType): string[] => {
@@ -58,6 +64,7 @@ const getBreadcrumb = (view: ViewType): string[] => {
     dashboard: ["Tổng quan"],
     sales: ["Kinh doanh", "Đơn hàng"],
     returns: ["Kinh doanh", "Đổi / Trả"],
+    chat: ["Kinh doanh", "Chat hỗ trợ"],
     reports: ["Báo cáo", "Doanh thu"],
     products: ["Sản phẩm", "Sản phẩm & SKU"],
     size_guides: ["Sản phẩm", "Bảng Size"],
@@ -79,6 +86,7 @@ type ViewType =
   | "dashboard"
   | "sales"
   | "returns"
+  | "chat"
   | "products"
   | "inventory"
   | "stock_issue"
@@ -95,7 +103,25 @@ type ViewType =
 export const AdminDashboard = () => {
   const [activeView, setActiveView] = useState<ViewType>("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [waitingChatsCount, setWaitingChatsCount] = useState(0);
   const { logout, user } = useAuth();
+  const { unreadCount } = useNotifications();
+
+  // Load waiting chats count
+  useEffect(() => {
+    const loadWaitingChats = async () => {
+      try {
+        const rooms = await chatService.getWaitingRooms();
+        setWaitingChatsCount(rooms.length);
+      } catch (error) {
+        console.error("Error loading waiting chats:", error);
+      }
+    };
+    loadWaitingChats();
+    // Refresh every 30 seconds
+    const interval = setInterval(loadWaitingChats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   console.log("🎛️ [AdminDashboard] Current view:", activeView);
   console.log("👤 [AdminDashboard] User:", user?.fullName, user?.role);
@@ -136,12 +162,28 @@ export const AdminDashboard = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="md:hidden text-gray-500"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <NotificationBell 
+                onNotificationClick={(notification) => {
+                  // Navigate based on notification type
+                  if (notification.type === "NEW_ORDER") {
+                    setActiveView("sales");
+                  } else if (notification.type === "CHAT_MESSAGE") {
+                    setActiveView("chat");
+                  } else if (notification.type === "NEW_RETURN") {
+                    setActiveView("returns");
+                  }
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="md:hidden text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
             {/* MODULE 1: Tổng quan */}
@@ -160,7 +202,7 @@ export const AdminDashboard = () => {
             <SidebarModule
               icon={<Store size={18} />}
               label="Kinh doanh"
-              defaultExpanded={["sales", "returns", "reports"].includes(
+              defaultExpanded={["sales", "returns", "reports", "chat"].includes(
                 activeView
               )}
             >
@@ -179,6 +221,16 @@ export const AdminDashboard = () => {
                 active={activeView === "returns"}
                 onClick={() => {
                   setActiveView("returns");
+                  setIsSidebarOpen(false);
+                }}
+              />
+              <SidebarSubItem
+                icon={<MessageCircle size={16} />}
+                label="Chat hỗ trợ"
+                active={activeView === "chat"}
+                badge={waitingChatsCount > 0 ? waitingChatsCount : undefined}
+                onClick={() => {
+                  setActiveView("chat");
                   setIsSidebarOpen(false);
                 }}
               />
@@ -375,6 +427,13 @@ export const AdminDashboard = () => {
           {activeView === "returns" && (
             <ErrorBoundary view="Returns">
               <ReturnManager />
+            </ErrorBoundary>
+          )}
+          {activeView === "chat" && (
+            <ErrorBoundary view="Chat">
+              <div className="px-6 md:px-8 pb-6">
+                <AdminChatDashboard />
+              </div>
             </ErrorBoundary>
           )}
           {activeView === "reports" && (

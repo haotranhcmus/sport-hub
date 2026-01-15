@@ -37,9 +37,15 @@ export interface SystemLog {
 
 export interface UserAddress {
   id: string;
-  name: string;
-  phone: string;
-  address: string;
+  name: string; // Tên người nhận
+  phone: string; // Số điện thoại
+  address: string; // Địa chỉ chi tiết
+  city?: string; // Tỉnh/Thành phố
+  district?: string; // Quận/Huyện
+  ward?: string; // Phường/Xã
+  provinceCode?: string; // Mã tỉnh (for API)
+  districtCode?: string; // Mã quận
+  wardCode?: string; // Mã phường
   isDefault: boolean;
 }
 
@@ -67,7 +73,7 @@ export interface ProductAttribute {
   code: string;
   categoryIds: string[];
   values: string[];
-  type: "variant" | "info";
+  type: "variant" | "specification" | "info";
 }
 
 export interface ProductVariant {
@@ -355,14 +361,37 @@ export interface AppBanner {
   order: number;
 }
 
+export interface ShippingZone {
+  provinceCode: string;
+  provinceName: string;
+  fee: number;
+}
+
 export interface SystemConfig {
+  id?: number;
   websiteTitle: string;
   logoUrl: string;
   hotline: string;
   contactEmail: string;
-  address: string;
+  // Store Address - for shipping calculation
+  storeAddress: string;
+  storeProvinceCode: string;
+  storeProvinceName: string;
+  storeDistrictCode?: string;
+  storeDistrictName?: string;
+  // Shipping Configuration
+  baseShippingFee: number; // Phí ship khác tỉnh
+  sameProvinceFee: number; // Phí ship cùng tỉnh (giá trực tiếp)
+  sameProvinceDiscount: number; // Legacy: Giảm giá nếu cùng tỉnh (%)
+  freeShippingThreshold: number; // Miễn phí ship nếu đơn > X VNĐ
+  // Tax & Policies
   vatRate: number;
   lowStockThreshold: number;
   returnPeriodDays: number;
+  // Banners
   banners: AppBanner[];
+  // Social Links
+  facebookUrl?: string;
+  zaloUrl?: string;
+  instagramUrl?: string;
 }

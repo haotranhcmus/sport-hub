@@ -8,10 +8,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
-  addAddress: (address: Omit<UserAddress, "id">) => Promise<void>;
+  addAddress: (address: UserAddress) => Promise<void>;
+  updateAddress: (address: UserAddress) => Promise<void>;
   removeAddress: (id: string) => Promise<void>;
   setDefaultAddress: (id: string) => Promise<void>;
-  updateProfile: (data: Partial<User>) => void;
+  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,20 +63,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     navigate("/login");
   };
 
-  const updateProfile = (data: Partial<User>) => {
+  const updateProfile = async (data: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...data };
     setUser(updated);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+
+    // Sync with database
+    try {
+      const { userService } = await import("../services");
+      await userService.updateProfile(user.id, {
+        fullName: data.fullName,
+        phone: data.phone,
+      });
+    } catch (err) {
+      console.error("Failed to sync profile to database:", err);
+      throw err;
+    }
   };
 
-  const addAddress = async (newAddr: Omit<UserAddress, "id">) => {
+  const addAddress = async (newAddr: UserAddress) => {
     if (!user) return;
-    const addressWithId = { ...newAddr, id: `addr-${Date.now()}` };
-    const updatedAddresses = [...user.addresses, addressWithId];
+    const updatedAddresses = [...user.addresses, newAddr];
     if (newAddr.isDefault) {
       updatedAddresses.forEach((a) => {
-        if (a.id !== addressWithId.id) a.isDefault = false;
+        if (a.id !== newAddr.id) a.isDefault = false;
       });
     }
     const updated = { ...user, addresses: updatedAddresses };
@@ -88,6 +100,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       await api.users.updateAddresses(user.id, updatedAddresses);
     } catch (err) {
       console.error("Failed to sync addresses to database:", err);
+      throw err;
+    }
+  };
+
+  const updateAddress = async (updatedAddr: UserAddress) => {
+    if (!user) return;
+    let updatedAddresses = user.addresses.map((a) =>
+      a.id === updatedAddr.id ? updatedAddr : a
+    );
+    // If setting as default, unset others
+    if (updatedAddr.isDefault) {
+      updatedAddresses = updatedAddresses.map((a) => ({
+        ...a,
+        isDefault: a.id === updatedAddr.id,
+      }));
+    }
+    const updated = { ...user, addresses: updatedAddresses };
+    setUser(updated);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+
+    // Sync with database
+    try {
+      const { api } = await import("../services");
+      await api.users.updateAddresses(user.id, updatedAddresses);
+    } catch (err) {
+      console.error("Failed to sync addresses to database:", err);
+      throw err;
     }
   };
 
@@ -107,6 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       await api.users.updateAddresses(user.id, updatedAddresses);
     } catch (err) {
       console.error("Failed to sync addresses to database:", err);
+      throw err;
     }
   };
 
@@ -126,6 +166,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       await api.users.updateAddresses(user.id, updatedAddresses);
     } catch (err) {
       console.error("Failed to sync addresses to database:", err);
+      throw err;
     }
   };
 
@@ -137,6 +178,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         logout,
         isAuthenticated: !!user,
         addAddress,
+        updateAddress,
         removeAddress,
         setDefaultAddress,
         updateProfile,

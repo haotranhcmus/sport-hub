@@ -536,244 +536,209 @@ export const ReturnManager = () => {
       {/* DETAIL MODAL */}
       {viewingRequest && (
         <div className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-6xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95">
-            <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <div className="flex items-center gap-6">
+          <div className="bg-white rounded-[32px] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
+            {/* Header - Compact */}
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-4">
                 <div
-                  className={`p-4 rounded-3xl shadow-xl ${
+                  className={`p-3 rounded-2xl shadow-lg ${
                     viewingRequest.type === ReturnType.EXCHANGE
                       ? "bg-blue-600"
                       : "bg-green-600"
                   } text-white`}
                 >
                   {viewingRequest.type === ReturnType.EXCHANGE ? (
-                    <ArrowRightLeft size={28} />
+                    <ArrowRightLeft size={22} />
                   ) : (
-                    <Banknote size={28} />
+                    <Banknote size={22} />
                   )}
                 </div>
                 <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-black uppercase tracking-tight text-slate-800">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black uppercase tracking-tight text-slate-800">
                       Yêu cầu: {viewingRequest.requestCode}
                     </h2>
                     {getStatusBadge(viewingRequest.status)}
                   </div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                  <p className="text-[9px] font-bold text-gray-400 uppercase">
                     Gắn với đơn hàng:{" "}
-                    <b className="text-secondary">
-                      {viewingRequest.order.orderCode}
-                    </b>
+                    <span className="text-secondary">{viewingRequest.order.orderCode}</span>
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setViewingRequest(null)}
-                className="p-3 text-gray-400 hover:text-red-500 hover:bg-white rounded-2xl transition shadow-sm border border-transparent hover:border-gray-100"
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-10">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <div className="lg:col-span-8 space-y-10">
-                  <div className="bg-gray-50 p-8 rounded-[32px] border border-gray-100 space-y-6">
-                    <div className="flex items-center gap-3 text-slate-400">
-                      <MessageSquare size={20} />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest">
-                        Nội dung phản hồi từ khách hàng
-                      </h4>
-                    </div>
-                    <p className="text-lg font-bold text-slate-700 leading-relaxed italic border-l-4 border-slate-200 pl-6">
-                      "{viewingRequest.reason}"
-                    </p>
-                    <div className="grid grid-cols-4 gap-4 pt-4">
-                      {viewingRequest.evidenceImages.map((img, i) => (
-                        <div
-                          key={i}
-                          className="aspect-square rounded-2xl border-2 border-white shadow-sm overflow-hidden group relative"
-                        >
-                          <img
-                            src={img}
-                            className="w-full h-full object-cover transition group-hover:scale-110"
-                            alt=""
-                          />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                            <ImageIcon className="text-white" size={24} />
-                          </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {/* Content - Grid layout horizontal */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-5">
+                {/* Cột trái: Sản phẩm + Lý do */}
+                <div className="space-y-4">
+                  {/* Sản phẩm đổi trả - Compact */}
+                  <div className="bg-white border border-gray-100 rounded-2xl p-4">
+                    <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                      <Package size={12} className="text-secondary" /> Sản phẩm đổi trả
+                    </h4>
+                    <div className="flex gap-4">
+                      <img
+                        src={viewingRequest.orderItem.thumbnailUrl || "https://via.placeholder.com/80"}
+                        className="w-20 h-20 rounded-xl object-cover border border-gray-100 shadow-sm"
+                        alt=""
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://via.placeholder.com/80";
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-black uppercase text-slate-800 truncate">
+                          {viewingRequest.orderItem.productName}
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <span className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold uppercase">
+                            Màu: {viewingRequest.orderItem.color}
+                          </span>
+                          <span className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold uppercase">
+                            Size: {viewingRequest.orderItem.size}
+                          </span>
+                          <span className="px-2 py-1 bg-gray-50 rounded-lg text-[9px] font-bold uppercase">
+                            SL: {viewingRequest.orderItem.quantity}
+                          </span>
+                          <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-bold">
+                            {viewingRequest.orderItem.unitPrice.toLocaleString()}đ / cái
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-3">
-                        <Package size={16} className="text-secondary" /> Sản
-                        phẩm đổi trả
-                      </h4>
-                    </div>
-                    <div className="bg-white border border-gray-100 rounded-[32px] p-8">
-                      <div className="flex gap-6">
-                        <img
-                          src={
-                            viewingRequest.orderItem.thumbnailUrl ||
-                            "https://via.placeholder.com/128?text=No+Image"
-                          }
-                          className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-100 shadow-md"
-                          alt=""
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            if (!target.src.includes("placeholder")) {
-                              target.src =
-                                "https://via.placeholder.com/128?text=No+Image";
-                            }
-                          }}
-                        />
-                        <div className="flex-1 space-y-4">
-                          <div>
-                            <h3 className="text-xl font-black uppercase text-slate-800 mb-2">
-                              {viewingRequest.orderItem.productName}
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                              <span className="px-3 py-1.5 bg-gray-50 rounded-xl text-[10px] font-black uppercase">
-                                Màu: {viewingRequest.orderItem.color}
-                              </span>
-                              <span className="px-3 py-1.5 bg-gray-50 rounded-xl text-[10px] font-black uppercase">
-                                Size: {viewingRequest.orderItem.size}
-                              </span>
-                              <span className="px-3 py-1.5 bg-gray-50 rounded-xl text-[10px] font-black uppercase">
-                                SL: {viewingRequest.orderItem.quantity}
-                              </span>
-                              <span className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase">
-                                {viewingRequest.orderItem.unitPrice.toLocaleString()}
-                                đ / cái
-                              </span>
-                            </div>
-                          </div>
-
-                          {viewingRequest.type === ReturnType.EXCHANGE &&
-                            (viewingRequest.exchangeToSize ||
-                              viewingRequest.exchangeToColor) && (
-                              <div className="p-4 bg-blue-50 rounded-2xl border-2 border-blue-200">
-                                <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-2">
-                                  <ArrowRightLeft
-                                    size={12}
-                                    className="inline mr-1"
-                                  />{" "}
-                                  Muốn đổi sang:
-                                </p>
-                                <div className="flex gap-2">
-                                  {viewingRequest.exchangeToSize && (
-                                    <span className="px-3 py-1.5 bg-white rounded-lg text-[10px] font-black uppercase text-blue-700">
-                                      Size: {viewingRequest.exchangeToSize}
-                                    </span>
-                                  )}
-                                  {viewingRequest.exchangeToColor && (
-                                    <span className="px-3 py-1.5 bg-white rounded-lg text-[10px] font-black uppercase text-blue-700">
-                                      Màu: {viewingRequest.exchangeToColor}
-                                    </span>
-                                  )}
-                                </div>
-                                {viewingRequest.type ===
-                                  ReturnType.EXCHANGE && (
-                                  <p
-                                    className={`mt-3 text-[10px] font-black ${
-                                      inventoryStock >=
-                                      viewingRequest.orderItem.quantity
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                    }`}
-                                  >
-                                    📦 Tồn kho đích: {inventoryStock} cái{" "}
-                                    {inventoryStock <
-                                      viewingRequest.orderItem.quantity &&
-                                      "(KHÔNG ĐỦ)"}
-                                  </p>
+                        {/* Đổi sang (nếu là Exchange) */}
+                        {viewingRequest.type === ReturnType.EXCHANGE &&
+                          (viewingRequest.exchangeToSize || viewingRequest.exchangeToColor) && (
+                            <div className="mt-3 p-2.5 bg-blue-50 rounded-xl border border-blue-200">
+                              <p className="text-[8px] font-black text-blue-500 uppercase mb-1.5">
+                                <ArrowRightLeft size={10} className="inline mr-1" /> Muốn đổi sang:
+                              </p>
+                              <div className="flex gap-1.5">
+                                {viewingRequest.exchangeToSize && (
+                                  <span className="px-2 py-1 bg-white rounded text-[9px] font-bold text-blue-700">
+                                    Size: {viewingRequest.exchangeToSize}
+                                  </span>
+                                )}
+                                {viewingRequest.exchangeToColor && (
+                                  <span className="px-2 py-1 bg-white rounded text-[9px] font-bold text-blue-700">
+                                    Màu: {viewingRequest.exchangeToColor}
+                                  </span>
                                 )}
                               </div>
-                            )}
-                        </div>
+                              <p className={`mt-2 text-[9px] font-bold ${inventoryStock >= viewingRequest.orderItem.quantity ? "text-green-600" : "text-red-600"}`}>
+                                📦 Tồn kho đích: {inventoryStock} cái {inventoryStock < viewingRequest.orderItem.quantity && "(KHÔNG ĐỦ)"}
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="lg:col-span-4 space-y-8">
-                  <div className="bg-white p-8 rounded-[32px] border border-gray-100 space-y-8 shadow-sm">
-                    <div>
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-3 mb-6">
-                        <Info size={18} className="text-secondary" /> Đối soát
-                        khách hàng
-                      </h4>
-                      <div className="space-y-4">
-                        <p className="font-black text-slate-800 uppercase text-lg leading-tight">
-                          {viewingRequest.order.customerName}
-                        </p>
-                        <p className="font-bold text-slate-600 text-sm">
-                          {viewingRequest.order.customerPhone}
-                        </p>
-                        <p className="font-black text-slate-800 flex items-center gap-2">
-                          <Clock size={16} className="text-gray-300" /> Ngày
-                          mua:{" "}
-                          {new Date(
-                            viewingRequest.order.createdAt || ""
-                          ).toLocaleDateString("vi-VN")}
-                        </p>
-                        {viewingRequest.order.customerAddress && (
-                          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-start gap-3">
-                            <Truck
-                              size={18}
-                              className="text-blue-600 shrink-0"
-                            />
-                            <p className="text-[10px] font-bold text-blue-800 leading-relaxed uppercase">
-                              Địa chỉ: {viewingRequest.order.customerAddress}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                  {/* Lý do + Hình ảnh */}
+                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <div className="flex items-center gap-2 text-slate-400 mb-2">
+                      <MessageSquare size={14} />
+                      <h4 className="text-[9px] font-black uppercase tracking-widest">Lý do khiếu nại</h4>
                     </div>
-
-                    {viewingRequest.bankInfo && (
-                      <div className="pt-8 border-t border-gray-100">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-3 mb-6">
-                          <Banknote size={18} className="text-green-600" /> Tài
-                          khoản hoàn tiền
-                        </h4>
-                        <div className="bg-green-50 p-5 rounded-2xl border border-green-100 space-y-2">
-                          <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">
-                            {viewingRequest.bankInfo.bankName}
-                          </p>
-                          <p className="text-sm font-black text-slate-900 tracking-widest">
-                            {viewingRequest.bankInfo.accountNumber}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-500 uppercase">
-                            {viewingRequest.bankInfo.accountHolder}
-                          </p>
-                        </div>
+                    <p className="text-sm font-bold text-slate-700 italic border-l-3 border-slate-200 pl-3">
+                      "{viewingRequest.reason}"
+                    </p>
+                    {viewingRequest.evidenceImages.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 mt-3">
+                        {viewingRequest.evidenceImages.map((img, i) => (
+                          <div key={i} className="aspect-square rounded-lg overflow-hidden border border-white shadow-sm">
+                            <img src={img} className="w-full h-full object-cover" alt="" />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Cột phải: Thông tin khách + Bank */}
+                <div className="space-y-4">
+                  {/* Thông tin khách hàng */}
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100">
+                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-3">
+                      <Info size={12} className="text-secondary" /> Thông tin khách hàng
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase">Họ tên</p>
+                        <p className="font-black text-slate-800 text-sm uppercase">{viewingRequest.order.customerName}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase">Điện thoại</p>
+                        <p className="font-bold text-slate-600 text-sm">{viewingRequest.order.customerPhone}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase">Ngày mua</p>
+                        <p className="font-bold text-slate-800 text-sm">
+                          {new Date(viewingRequest.order.createdAt || "").toLocaleDateString("vi-VN")}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase">Tổng đơn</p>
+                        <p className="font-black text-red-600 text-sm">
+                          {viewingRequest.order.totalAmount?.toLocaleString() || "N/A"}đ
+                        </p>
+                      </div>
+                    </div>
+                    {viewingRequest.order.customerAddress && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-2">
+                        <Truck size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                        <p className="text-[9px] font-bold text-blue-800 uppercase leading-relaxed">
+                          {viewingRequest.order.customerAddress}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tài khoản hoàn tiền */}
+                  {viewingRequest.bankInfo && (
+                    <div className="bg-green-50 p-4 rounded-2xl border border-green-200">
+                      <h4 className="text-[9px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 mb-3">
+                        <Banknote size={12} /> Tài khoản hoàn tiền
+                      </h4>
+                      <div className="bg-white p-3 rounded-xl space-y-1">
+                        <p className="text-[10px] font-black text-slate-800 uppercase">
+                          {viewingRequest.bankInfo.bankName}
+                        </p>
+                        <p className="text-sm font-black text-slate-900 tracking-widest">
+                          {viewingRequest.bankInfo.accountNumber}
+                        </p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase">
+                          {viewingRequest.bankInfo.accountHolder}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="p-8 bg-gray-50 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
+            {/* Footer - Actions */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
               {/* Reject button - only for PENDING */}
-              {viewingRequest.status === ReturnRequestStatus.PENDING && (
+              {viewingRequest.status === ReturnRequestStatus.PENDING ? (
                 <button
                   onClick={() => setShowRejectModal(true)}
-                  className="px-10 py-4 bg-white border border-red-200 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition shadow-sm"
+                  className="px-6 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl font-black text-[9px] uppercase hover:bg-red-50 transition"
                 >
                   TỪ CHỐI YÊU CẦU
                 </button>
-              )}
+              ) : <div />}
 
-              <div className="flex gap-4 ml-auto">
+              <div className="flex gap-3">
                 <button
                   onClick={() => setViewingRequest(null)}
-                  className="px-8 py-4 font-black text-gray-400 uppercase text-[10px] tracking-widest hover:text-slate-800 transition"
+                  className="px-6 py-2.5 font-black text-gray-400 uppercase text-[9px] hover:text-slate-800 transition"
                 >
                   Đóng
                 </button>
@@ -782,9 +747,9 @@ export const ReturnManager = () => {
                 {viewingRequest.status === ReturnRequestStatus.PENDING && (
                   <button
                     onClick={() => setShowApproveModal(true)}
-                    className="px-12 py-4 bg-blue-600 text-white rounded-[20px] font-black uppercase text-xs tracking-widest shadow-2xl shadow-blue-500/30 flex items-center justify-center gap-3 hover:bg-blue-700 transition active:scale-95"
+                    className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-black uppercase text-[9px] shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-blue-700 transition"
                   >
-                    <CheckCircle2 size={18} /> DUYỆT YÊU CẦU
+                    <CheckCircle2 size={14} /> DUYỆT YÊU CẦU
                   </button>
                 )}
 
@@ -793,12 +758,12 @@ export const ReturnManager = () => {
                   <button
                     onClick={handleConfirmReceived}
                     disabled={loading}
-                    className="px-12 py-4 bg-cyan-600 text-white rounded-[20px] font-black uppercase text-xs tracking-widest shadow-2xl shadow-cyan-500/30 flex items-center justify-center gap-3 hover:bg-cyan-700 transition active:scale-95 disabled:opacity-50"
+                    className="px-8 py-2.5 bg-cyan-600 text-white rounded-xl font-black uppercase text-[9px] shadow-lg shadow-cyan-500/30 flex items-center gap-2 hover:bg-cyan-700 transition disabled:opacity-50"
                   >
                     {loading ? (
-                      <RefreshCw className="animate-spin" size={18} />
+                      <RefreshCw className="animate-spin" size={14} />
                     ) : (
-                      <Package size={18} />
+                      <Package size={14} />
                     )}
                     XÁC NHẬN NHẬN HÀNG
                   </button>
@@ -809,12 +774,12 @@ export const ReturnManager = () => {
                   <button
                     onClick={handleComplete}
                     disabled={loading}
-                    className="px-12 py-4 bg-green-600 text-white rounded-[20px] font-black uppercase text-xs tracking-widest shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3 hover:bg-green-700 transition active:scale-95 disabled:opacity-50"
+                    className="px-8 py-2.5 bg-green-600 text-white rounded-xl font-black uppercase text-[9px] shadow-lg shadow-green-500/30 flex items-center gap-2 hover:bg-green-700 transition disabled:opacity-50"
                   >
                     {loading ? (
-                      <RefreshCw className="animate-spin" size={18} />
+                      <RefreshCw className="animate-spin" size={14} />
                     ) : (
-                      <CheckCircle2 size={18} />
+                      <CheckCircle2 size={14} />
                     )}
                     HOÀN TẤT
                   </button>
@@ -828,18 +793,17 @@ export const ReturnManager = () => {
       {/* APPROVE MODAL */}
       {showApproveModal && (
         <div className="fixed inset-0 bg-black/70 z-[400] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-10 text-center space-y-6">
-              <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 size={40} />
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+                <CheckCircle2 size={28} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">
                   Phê duyệt yêu cầu
                 </h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                  Xác nhận duyệt yêu cầu đổi/trả này? Khách hàng sẽ nhận được
-                  thông báo qua email.
+                <p className="text-xs text-slate-500 font-medium">
+                  Xác nhận duyệt yêu cầu đổi/trả này?
                 </p>
               </div>
               <textarea

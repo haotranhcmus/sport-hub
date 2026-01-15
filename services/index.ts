@@ -134,6 +134,85 @@ const userService = {
     if (error) throw new Error(error.message);
     return true;
   },
+
+  // Check if phone number is already used by another user
+  checkPhoneExists: async (
+    phone: string,
+    excludeUserId?: string
+  ): Promise<boolean> => {
+    let query = supabase.from("User").select("id").eq("phone", phone);
+
+    if (excludeUserId) {
+      query = query.neq("id", excludeUserId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data && data.length > 0;
+  },
+
+  // Update user profile
+  updateProfile: async (
+    userId: string,
+    updates: { fullName?: string; phone?: string }
+  ) => {
+    const { data, error } = await supabase
+      .from("User")
+      .update(withUpdatedAt(updates))
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  // Change password (verify old password first)
+  changePassword: async (
+    userId: string,
+    oldPassword: string,
+    newPassword: string
+  ) => {
+    // Get current user to verify old password
+    const { data: user, error: fetchError } = await supabase
+      .from("User")
+      .select("password")
+      .eq("id", userId)
+      .single();
+
+    if (fetchError) throw new Error(fetchError.message);
+
+    // Verify old password (in real app, should use bcrypt)
+    if (user.password !== oldPassword) {
+      throw new Error("Mật khẩu cũ không chính xác");
+    }
+
+    // Check new password is different from old
+    if (oldPassword === newPassword) {
+      throw new Error("Mật khẩu mới phải khác mật khẩu cũ");
+    }
+
+    // Update password
+    const { error: updateError } = await supabase
+      .from("User")
+      .update(withUpdatedAt({ password: newPassword }))
+      .eq("id", userId);
+
+    if (updateError) throw new Error(updateError.message);
+    return true;
+  },
+
+  // Get user by ID
+  getById: async (userId: string) => {
+    const { data, error } = await supabase
+      .from("User")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
 };
 
 // Cart service (in-memory)
@@ -780,9 +859,8 @@ const reportService = {
   },
 
   getRevenueData: async ({ range }: { range: string }) => {
-    // Mock data for revenue analytics
+    // Tính date range dựa trên filter
     const now = new Date();
-    const chartData = [];
     const days =
       range === "today"
         ? 1
@@ -792,65 +870,297 @@ const reportService = {
         ? 30
         : 365;
 
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      chartData.push({
-        date: date.toLocaleDateString("vi-VN", {
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Lấy date range cho period trước để tính growth
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
+
+    try {
+      // Lấy đơn hàng trong kỳ hiện tại
+      const { data: currentOrders, error: orderError } = await supabase
+        .from("Order")
+        .select(
+          `
+          id, orderCode, totalAmount, shippingFee, status, paymentMethod, createdAt,
+          items:OrderItem(id, productId, productName, quantity, unitPrice, thumbnailUrl)
+        `
+        )
+        .gte("createdAt", startDate.toISOString())
+        .lte("createdAt", now.toISOString())
+        .order("createdAt", { ascending: true });
+
+      if (orderError) throw orderError;
+
+      // Lấy đơn hàng trong kỳ trước để tính growth
+      const { data: prevOrders, error: prevError } = await supabase
+        .from("Order")
+        .select("id, totalAmount")
+        .gte("createdAt", prevStartDate.toISOString())
+        .lt("createdAt", startDate.toISOString());
+
+      if (prevError) throw prevError;
+
+      // Lấy return requests trong kỳ
+      const { data: returnRequests, error: returnError } = await supabase
+        .from("ReturnRequest")
+        .select("id, refundAmount, status")
+        .gte("createdAt", startDate.toISOString())
+        .lte("createdAt", now.toISOString());
+
+      if (returnError) throw returnError;
+
+      // Lấy danh sách category
+      const { data: categories } = await supabase
+        .from("Category")
+        .select("id, name");
+
+      // Lấy products với categoryId
+      const { data: products } = await supabase
+        .from("Product")
+        .select("id, categoryId, costPrice, basePrice");
+
+      const productCategoryMap = new Map(
+        products?.map((p) => [
+          p.id,
+          {
+            categoryId: p.categoryId,
+            costPrice: p.costPrice || p.basePrice * 0.7,
+          },
+        ]) || []
+      );
+      const categoryMap = new Map(categories?.map((c) => [c.id, c.name]) || []);
+
+      // Tính metrics
+      const orders = currentOrders || [];
+      const totalRevenue = orders.reduce(
+        (sum, o) => sum + (o.totalAmount || 0),
+        0
+      );
+      const totalShipping = orders.reduce(
+        (sum, o) => sum + (o.shippingFee || 0),
+        0
+      );
+      const netRevenue = totalRevenue - totalShipping;
+      const totalOrders = orders.length;
+
+      // Tính profit từ costPrice thực tế
+      let totalCost = 0;
+      orders.forEach((order: any) => {
+        (order.items || []).forEach((item: any) => {
+          const productInfo = productCategoryMap.get(item.productId);
+          const costPrice = productInfo?.costPrice || item.unitPrice * 0.7;
+          totalCost += costPrice * item.quantity;
+        });
+      });
+      const profit = netRevenue - totalCost;
+
+      // Tính prev period metrics
+      const prevRevenue = (prevOrders || []).reduce(
+        (sum, o) => sum + (o.totalAmount || 0),
+        0
+      );
+      const prevOrderCount = (prevOrders || []).length;
+
+      // Tính growth %
+      const revenueGrowth =
+        prevRevenue > 0
+          ? Math.round(((netRevenue - prevRevenue) / prevRevenue) * 100)
+          : 0;
+      const ordersGrowth =
+        prevOrderCount > 0
+          ? Math.round(((totalOrders - prevOrderCount) / prevOrderCount) * 100)
+          : 0;
+
+      // Return count và rate
+      const returnCount = (returnRequests || []).length;
+      const returnRate =
+        totalOrders > 0 ? Math.round((returnCount / totalOrders) * 100) : 0;
+
+      // Build chartData - group by date
+      const chartDataMap = new Map<
+        string,
+        { revenue: number; orders: number }
+      >();
+
+      // Initialize all dates in range
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toLocaleDateString("vi-VN", {
           day: "2-digit",
           month: "2-digit",
-        }),
-        revenue: Math.floor(Math.random() * 50000000) + 10000000,
-        orders: Math.floor(Math.random() * 50) + 10,
+        });
+        chartDataMap.set(dateKey, { revenue: 0, orders: 0 });
+      }
+
+      // Aggregate order data
+      orders.forEach((order: any) => {
+        const orderDate = new Date(order.createdAt);
+        const dateKey = orderDate.toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+        });
+        const existing = chartDataMap.get(dateKey);
+        if (existing) {
+          existing.revenue += order.totalAmount || 0;
+          existing.orders += 1;
+        }
       });
+
+      const chartData = Array.from(chartDataMap.entries()).map(
+        ([date, data]) => ({
+          date,
+          revenue: data.revenue,
+          orders: data.orders,
+        })
+      );
+
+      // Top Products - aggregate from OrderItems
+      const productSales = new Map<
+        string,
+        {
+          name: string;
+          sold: number;
+          revenue: number;
+          sku: string;
+          thumbnail: string;
+        }
+      >();
+      orders.forEach((order: any) => {
+        (order.items || []).forEach((item: any) => {
+          const key = item.productId;
+          const existing = productSales.get(key) || {
+            name: item.productName,
+            sold: 0,
+            revenue: 0,
+            sku: "",
+            thumbnail: item.thumbnailUrl || "",
+          };
+          existing.sold += item.quantity;
+          existing.revenue += item.unitPrice * item.quantity;
+          productSales.set(key, existing);
+        });
+      });
+
+      const topProducts = Array.from(productSales.values())
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .map((p, idx) => ({ ...p, rank: idx + 1 }));
+
+      // Category Breakdown
+      const categorySales = new Map<string, number>();
+      orders.forEach((order: any) => {
+        (order.items || []).forEach((item: any) => {
+          const productInfo = productCategoryMap.get(item.productId);
+          const categoryId = productInfo?.categoryId;
+          const categoryName = categoryMap.get(categoryId) || "Khác";
+          const existing = categorySales.get(categoryName) || 0;
+          categorySales.set(
+            categoryName,
+            existing + item.unitPrice * item.quantity
+          );
+        });
+      });
+
+      const COLORS = [
+        "#3b82f6",
+        "#10b981",
+        "#f59e0b",
+        "#ef4444",
+        "#8b5cf6",
+        "#06b6d4",
+        "#ec4899",
+      ];
+      const categoryBreakdown = Array.from(categorySales.entries())
+        .map(([name, value], idx) => ({
+          name,
+          value,
+          color: COLORS[idx % COLORS.length],
+        }))
+        .sort((a, b) => b.value - a.value);
+
+      // Payment Methods
+      const paymentMethods = new Map<
+        string,
+        { count: number; amount: number }
+      >();
+      const PAYMENT_LABELS: Record<string, string> = {
+        COD: "Tiền mặt (COD)",
+        BANK_TRANSFER: "Chuyển khoản",
+        MOMO: "MoMo",
+        VNPAY: "VNPay",
+        CREDIT_CARD: "Thẻ tín dụng",
+      };
+      const PAYMENT_COLORS: Record<string, string> = {
+        COD: "#10b981",
+        BANK_TRANSFER: "#3b82f6",
+        MOMO: "#ec4899",
+        VNPAY: "#06b6d4",
+        CREDIT_CARD: "#f59e0b",
+      };
+
+      orders.forEach((order: any) => {
+        const method = order.paymentMethod || "COD";
+        const existing = paymentMethods.get(method) || { count: 0, amount: 0 };
+        existing.count += 1;
+        existing.amount += order.totalAmount || 0;
+        paymentMethods.set(method, existing);
+      });
+
+      const paymentData = Array.from(paymentMethods.entries()).map(
+        ([method, data]) => ({
+          method: PAYMENT_LABELS[method] || method,
+          count: data.count,
+          amount: data.amount,
+          color: PAYMENT_COLORS[method] || "#6b7280",
+        })
+      );
+
+      return {
+        metrics: {
+          totalRevenue,
+          netRevenue,
+          profit,
+          totalOrders,
+          orderTotal: totalOrders,
+          avgOrderValue:
+            totalOrders > 0 ? Math.round(netRevenue / totalOrders) : 0,
+          returnCount,
+          growth: {
+            revenue: revenueGrowth,
+            profit: revenueGrowth, // Simplified
+            orders: ordersGrowth,
+          },
+          returnRate,
+        },
+        chartData,
+        topProducts,
+        categoryBreakdown,
+        paymentData,
+      };
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      return {
+        metrics: {
+          totalRevenue: 0,
+          netRevenue: 0,
+          profit: 0,
+          totalOrders: 0,
+          orderTotal: 0,
+          avgOrderValue: 0,
+          returnCount: 0,
+          growth: { revenue: 0, profit: 0, orders: 0 },
+          returnRate: 0,
+        },
+        chartData: [],
+        topProducts: [],
+        categoryBreakdown: [],
+        paymentData: [],
+      };
     }
-
-    const totalRevenue = chartData.reduce((sum, item) => sum + item.revenue, 0);
-    const totalOrders = chartData.reduce((sum, item) => sum + item.orders, 0);
-    const profit = Math.floor(totalRevenue * 0.3); // 30% profit margin
-
-    return {
-      metrics: {
-        totalRevenue,
-        netRevenue: totalRevenue,
-        profit,
-        totalOrders,
-        orderTotal: totalOrders,
-        avgOrderValue: totalRevenue / totalOrders,
-        returnCount: Math.floor(Math.random() * 5) + 1, // 1-5%
-        growth: {
-          revenue: Math.floor(Math.random() * 30) + 5,
-          profit: Math.floor(Math.random() * 25) + 3,
-          orders: Math.floor(Math.random() * 20) + 3,
-        },
-        returnRate: Math.floor(Math.random() * 5) + 1,
-      },
-      chartData,
-      topProducts: [
-        {
-          name: "Áo Manchester United Home 24/25",
-          sold: 120,
-          revenue: 15000000,
-        },
-        { name: "Giày Nike Mercurial", sold: 89, revenue: 12000000 },
-        { name: "Áo Real Madrid Away", sold: 75, revenue: 9000000 },
-      ],
-      categoryBreakdown: [
-        { name: "Áo đấu", value: 45, color: "#3b82f6" },
-        { name: "Giày", value: 30, color: "#10b981" },
-        { name: "Phụ kiện", value: 25, color: "#f59e0b" },
-      ],
-      paymentData: [
-        {
-          method: "Chuyển khoản",
-          count: 120,
-          amount: 180000000,
-          color: "#3b82f6",
-        },
-        { method: "Tiền mặt", count: 45, amount: 67500000, color: "#10b981" },
-        { method: "Ví điện tử", count: 30, amount: 45000000, color: "#f59e0b" },
-      ],
-    };
   },
 
   getInventoryData: async (filters: any) => {

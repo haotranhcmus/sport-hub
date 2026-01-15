@@ -1,35 +1,29 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services";
-import { Category, Product } from "../types";
-import { ArrowRight, Search } from "lucide-react";
+import { Category, Product, AppBanner } from "../types";
+import { ArrowRight, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "../components/features/product/ProductCard";
 import { useProducts } from "../hooks/useProductsQuery";
 
-export const HomePage = () => {
-  // Use TanStack Query for automatic caching
-  const { data: allCategories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["categories"],
-    queryFn: () => api.categories.list(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
+// Banner Slider Component
+const BannerSlider = ({ banners }: { banners: AppBanner[] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const activeBanners = banners.filter((b) => b.isActive && b.imageUrl);
 
-  // Lọc chỉ lấy danh mục cha (không có parentId)
-  const parentCategories = useMemo(
-    () => allCategories.filter((cat) => !cat.parentId),
-    [allCategories]
-  );
+  // Auto slide
+  useEffect(() => {
+    if (activeBanners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % activeBanners.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeBanners.length]);
 
-  const { data: allProducts = [], isLoading: productsLoading } = useProducts();
-
-  const featuredProducts = useMemo(
-    () => allProducts.slice(0, 4),
-    [allProducts]
-  );
-
-  return (
-    <div className="space-y-12">
+  if (activeBanners.length === 0) {
+    // Fallback banner
+    return (
       <section className="relative rounded-2xl overflow-hidden shadow-2xl h-[400px] md:h-[500px]">
         <img
           src="https://picsum.photos/1920/600?random=hero"
@@ -44,6 +38,93 @@ export const HomePage = () => {
             <p className="mb-8 text-lg text-gray-200">
               Bộ sưu tập giày bóng đá mới nhất mùa giải 2025.
             </p>
+            <Link
+              to="/products"
+              className="bg-secondary text-white px-8 py-3 rounded-full font-bold transition inline-flex items-center shadow-lg hover:bg-blue-600"
+            >
+              Mua ngay <ArrowRight className="ml-2" />
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const goToSlide = (index: number) => setCurrentIndex(index);
+  const goPrev = () =>
+    setCurrentIndex(
+      (prev) => (prev - 1 + activeBanners.length) % activeBanners.length
+    );
+  const goNext = () =>
+    setCurrentIndex((prev) => (prev + 1) % activeBanners.length);
+
+  return (
+    <section className="relative rounded-2xl overflow-hidden shadow-2xl h-[400px] md:h-[500px] group">
+      {/* Slides */}
+      <div
+        className="flex h-full transition-transform duration-500 ease-out"
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {activeBanners.map((banner, idx) => (
+          <div key={banner.id} className="w-full h-full flex-shrink-0 relative">
+            {banner.linkUrl ? (
+              <Link to={banner.linkUrl} className="block w-full h-full">
+                <img
+                  src={banner.imageUrl}
+                  alt={`Banner ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </Link>
+            ) : (
+              <img
+                src={banner.imageUrl}
+                alt={`Banner ${idx + 1}`}
+                className="w-full h-full object-cover"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation Arrows */}
+      {activeBanners.length > 1 && (
+        <>
+          <button
+            onClick={goPrev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={goNext}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </>
+      )}
+
+      {/* Dots */}
+      {activeBanners.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {activeBanners.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => goToSlide(idx)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                idx === currentIndex
+                  ? "bg-white scale-110"
+                  : "bg-white/50 hover:bg-white/75"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* CTA Overlay (optional - shown if first banner) */}
+      {currentIndex === 0 && activeBanners[0] && !activeBanners[0].linkUrl && (
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center pointer-events-none">
+          <div className="px-8 md:px-16 max-w-xl text-white pointer-events-auto">
             <div className="flex flex-wrap gap-4">
               <Link
                 to="/products"
@@ -60,7 +141,46 @@ export const HomePage = () => {
             </div>
           </div>
         </div>
-      </section>
+      )}
+    </section>
+  );
+};
+
+export const HomePage = () => {
+  // Use TanStack Query for automatic caching
+  const { data: allCategories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.categories.list(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Load system config for banners
+  const { data: systemConfig } = useQuery({
+    queryKey: ["systemConfig"],
+    queryFn: () => api.system.getConfig(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Lọc chỉ lấy danh mục cha (không có parentId)
+  const parentCategories = useMemo(
+    () => allCategories.filter((cat) => !cat.parentId),
+    [allCategories]
+  );
+
+  const { data: allProducts = [], isLoading: productsLoading } = useProducts();
+
+  const featuredProducts = useMemo(
+    () => allProducts.slice(0, 4),
+    [allProducts]
+  );
+
+  // Get banners from config
+  const banners = systemConfig?.banners || [];
+
+  return (
+    <div className="space-y-12">
+      {/* Banner Slider */}
+      <BannerSlider banners={banners} />
 
       <section>
         <div className="flex justify-between items-end mb-6">

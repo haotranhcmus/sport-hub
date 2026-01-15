@@ -15,6 +15,8 @@ import { CartDrawer } from "../features/cart/CartDrawer";
 import { api } from "../../services";
 import { Product } from "../../types/index";
 import { removeAccents } from "../../utils"; // ✅ FIX: Correct import path
+import { NotificationBell } from "../common/NotificationBell";
+import { CustomerChatWidget } from "../chat/CustomerChatWidget";
 
 export const Layout = () => {
   const { totalItems, toggleCart } = useCart();
@@ -221,6 +223,9 @@ export const Layout = () => {
 
               {isAuthenticated ? (
                 <div className="flex items-center space-x-1">
+                  {/* Notification Bell */}
+                  <NotificationBell />
+
                   <Link
                     to="/profile"
                     className="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-2xl transition"
@@ -271,6 +276,9 @@ export const Layout = () => {
           </p>
         </div>
       </footer>
+
+      {/* Customer Chat Widget - Only for customers */}
+      {!isStaff && isAuthenticated && <CustomerChatWidget />}
     </div>
   );
 };

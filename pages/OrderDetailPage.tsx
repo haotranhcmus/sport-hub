@@ -525,140 +525,130 @@ export const OrderDetailPage = () => {
       ?.slug || "";
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto py-8 px-4 animate-in fade-in duration-500">
       {/* Nút quay lại */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-3 px-6 py-3 mb-6 bg-white hover:bg-gray-50 rounded-2xl border border-gray-100 shadow-sm transition-all font-black text-sm uppercase tracking-tight"
+        className="flex items-center gap-3 px-5 py-2.5 mb-4 bg-white hover:bg-gray-50 rounded-xl border border-gray-100 shadow-sm transition-all font-black text-xs uppercase tracking-tight"
       >
-        <ArrowLeft size={20} /> Quay lại
+        <ArrowLeft size={18} /> Quay lại
       </button>
 
-      {/* Card chính */}
-      <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95">
-        {/* Header với background theo trạng thái */}
-        <div
-          className={`p-8 ${currentStatusInfo.bg} flex flex-col md:flex-row justify-between items-center gap-6`}
-        >
-          <div className="flex items-center gap-6">
-            <div
-              className={`w-16 h-16 ${currentStatusInfo.color} bg-white/20 rounded-2xl flex items-center justify-center`}
-            >
-              <Package size={32} />
-            </div>
-            <div>
-              <p
-                className={`text-[10px] font-black uppercase tracking-widest opacity-70 ${currentStatusInfo.color}`}
+      {/* Layout 2 cột: Thông tin chính bên trái, Sản phẩm bên phải */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Cột trái: Thông tin đơn hàng */}
+        <div className="lg:col-span-5 space-y-4">
+          {/* Header trạng thái */}
+          <div
+            className={`p-6 ${currentStatusInfo.bg} rounded-3xl border border-current/10`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`w-12 h-12 ${currentStatusInfo.color} bg-white/30 rounded-xl flex items-center justify-center`}
               >
-                Trạng thái hiện tại
-              </p>
-              <h2
-                className={`text-3xl font-black uppercase tracking-tight ${currentStatusInfo.color}`}
-              >
-                {currentStatusInfo.label}
-              </h2>
-              <p
-                className={`text-xs font-bold mt-1 ${currentStatusInfo.color} opacity-80`}
-              >
-                Mã đơn: {order.orderCode}
-              </p>
+                <Package size={24} />
+              </div>
+              <div>
+                <p
+                  className={`text-[9px] font-black uppercase tracking-widest opacity-70 ${currentStatusInfo.color}`}
+                >
+                  Trạng thái hiện tại
+                </p>
+                <h2
+                  className={`text-2xl font-black uppercase tracking-tight ${currentStatusInfo.color}`}
+                >
+                  {currentStatusInfo.label}
+                </h2>
+                <p
+                  className={`text-xs font-bold mt-0.5 ${currentStatusInfo.color} opacity-80`}
+                >
+                  Mã đơn: {order.orderCode}
+                </p>
+              </div>
             </div>
           </div>
-          <div className="text-center md:text-right">
-            <p
-              className={`text-[10px] font-black uppercase tracking-widest ${currentStatusInfo.color} opacity-70`}
-            >
-              Hệ thống đang cập nhật lộ trình đơn hàng của bạn.
-            </p>
+
+          {/* Thông tin khách hàng + Thời gian - Compact */}
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <div className="grid grid-cols-2 gap-6">
+              {/* Thông tin khách hàng */}
+              <div>
+                <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] border-b border-gray-50 pb-2 mb-3">
+                  Thông tin khách hàng
+                </h3>
+                <p className="font-black text-gray-800 text-sm uppercase tracking-tight">
+                  {order.customerName}
+                </p>
+                <p className="text-xs font-bold text-gray-500 mt-1">
+                  {order.customerPhone}
+                </p>
+                <p className="text-xs text-gray-500 mt-2 flex items-start gap-1.5">
+                  <MapPin
+                    size={14}
+                    className="text-secondary shrink-0 mt-0.5"
+                  />
+                  <span className="line-clamp-2">{order.customerAddress}</span>
+                </p>
+              </div>
+
+              {/* Thời gian & Thanh toán */}
+              <div>
+                <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] border-b border-gray-50 pb-2 mb-3">
+                  Thanh toán
+                </h3>
+                <div className="space-y-2 text-xs">
+                  <p className="font-bold text-gray-600 flex items-center gap-2">
+                    <Calendar size={14} className="text-gray-300" />
+                    {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                  </p>
+                  <p className="font-bold text-gray-600 flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-gray-300" />
+                    {order.paymentMethod === "COD" ? "COD" : "Online"}
+                  </p>
+                  <p className="font-bold flex items-center gap-2">
+                    <CreditCard size={14} className="text-gray-300" />
+                    <span
+                      className={`uppercase font-black ${
+                        order.paymentStatus === "PAID"
+                          ? "text-green-600"
+                          : order.paymentStatus === "PENDING_REFUND"
+                          ? "text-orange-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {order.paymentStatus === "PAID"
+                        ? "Đã TT"
+                        : order.paymentStatus === "PENDING_REFUND"
+                        ? "Chờ hoàn"
+                        : "Chưa TT"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tổng tiền */}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+              <span className="text-xs font-black text-gray-400 uppercase">Tổng tiền:</span>
+              <span className="text-xl font-black text-red-600 tracking-tight">
+                {order.totalAmount.toLocaleString()}đ
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Nội dung chi tiết */}
-        <div className="p-10">
-          {/* Thông tin khách hàng và thời gian */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
-            <div className="space-y-6">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 pb-2">
-                Thông tin khách hàng
-              </h3>
-              <div className="space-y-1">
-                <p className="font-black text-gray-800 text-lg uppercase tracking-tight">
-                  {order.customerName}
-                </p>
-                <p className="text-sm font-bold text-gray-500">
-                  {order.customerPhone}
-                </p>
-                <p className="text-sm text-gray-500 mt-2 flex items-start gap-2">
-                  <MapPin
-                    size={16}
-                    className="text-secondary shrink-0 mt-0.5"
-                  />
-                  {order.customerAddress}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 pb-2">
-                Thời gian & Hình thức
-              </h3>
-              <div className="space-y-3">
-                <p className="text-sm font-bold text-gray-600 flex items-center gap-3">
-                  <Calendar size={18} className="text-gray-300" />
-                  Ngày đặt: {new Date(order.createdAt).toLocaleString("vi-VN")}
-                </p>
-                <p className="text-sm font-bold text-gray-600 flex items-center gap-3">
-                  <ShieldCheck size={18} className="text-gray-300" />
-                  Thanh toán:{" "}
-                  <span className="uppercase">
-                    {order.paymentMethod === "COD"
-                      ? "Tiền mặt (COD)"
-                      : "Online"}
-                  </span>
-                </p>
-                <p className="text-sm font-bold text-gray-600 flex items-center gap-3">
-                  <CreditCard size={18} className="text-gray-300" />
-                  Trạng thái TT:{" "}
-                  <span
-                    className={`uppercase font-black ${
-                      order.paymentStatus === "PAID"
-                        ? "text-green-600"
-                        : order.paymentStatus === "PENDING_REFUND"
-                        ? "text-orange-600"
-                        : order.paymentStatus === "REFUNDED"
-                        ? "text-blue-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {order.paymentStatus === "PAID"
-                      ? "Đã thanh toán"
-                      : order.paymentStatus === "UNPAID"
-                      ? "Chưa thanh toán"
-                      : order.paymentStatus === "PENDING_REFUND"
-                      ? "Chờ hoàn tiền"
-                      : order.paymentStatus === "REFUNDED"
-                      ? "Đã hoàn tiền"
-                      : order.paymentStatus}
-                  </span>
-                </p>
-                <p className="text-sm font-black text-red-600 uppercase tracking-tighter">
-                  Tổng tiền: {order.totalAmount.toLocaleString()}đ
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Danh sách sản phẩm */}
-          <div className="mb-10">
-            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 pb-2 mb-6 flex items-center gap-2">
-              <Package size={16} className="text-secondary" />
-              Danh sách sản phẩm
+        {/* Cột phải: Danh sách sản phẩm */}
+        <div className="lg:col-span-7">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] border-b border-gray-50 pb-2 mb-4 flex items-center gap-2">
+              <Package size={14} className="text-secondary" />
+              Danh sách sản phẩm ({order.items.length})
             </h3>
-            <div className="space-y-6">
+            <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
               {order.items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex gap-6 p-6 bg-gray-50 rounded-3xl border border-gray-100"
+                  className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100/50 transition"
                 >
                   <Link
                     to={
@@ -666,7 +656,7 @@ export const OrderDetailPage = () => {
                         ? `/products/${getProductSlug(item)}`
                         : "#"
                     }
-                    className="w-24 h-24 bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm shrink-0"
+                    className="w-16 h-16 bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm shrink-0"
                   >
                     <img
                       src={
@@ -680,118 +670,105 @@ export const OrderDetailPage = () => {
                       alt=""
                     />
                   </Link>
-                  <div className="flex-1 flex flex-col md:flex-row justify-between gap-4">
-                    <div>
-                      <h4 className="font-black text-gray-800 text-base uppercase tracking-tight">
-                        {item.productName}
-                      </h4>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
-                        {item.color} • SIZE {item.size}
-                      </p>
-                      <p className="text-xs font-bold text-gray-500 mt-2">
-                        Số lượng:{" "}
-                        <span className="text-gray-800">{item.quantity}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-black text-xl text-gray-900 tracking-tighter">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-black text-gray-800 text-sm uppercase tracking-tight truncate">
+                      {item.productName}
+                    </h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">
+                      {item.color} • Size {item.size} • SL: {item.quantity}
+                    </p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="font-black text-sm text-gray-900">
                         {item.unitPrice.toLocaleString()}đ
-                      </p>
-
+                      </span>
+                      {/* Review/Return buttons inline */}
                       {order.status === OrderStatus.COMPLETED && !isStaff && (
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="flex gap-1.5">
                           {item.isReviewed ? (
                             <button
                               onClick={() => openViewReviewModal(item)}
-                              className="px-6 py-2 bg-green-50 text-green-600 border border-green-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-100 transition flex items-center gap-2"
+                              className="px-3 py-1 bg-green-50 text-green-600 border border-green-100 rounded-lg text-[9px] font-black uppercase hover:bg-green-100 transition flex items-center gap-1"
                             >
-                              <CheckCircle2 size={12} /> Xem đánh giá
+                              <CheckCircle2 size={10} /> Xem
                             </button>
                           ) : (
                             <button
                               onClick={() => openReviewModal(item)}
-                              className="px-6 py-2 bg-secondary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition shadow-lg shadow-blue-500/10 flex items-center gap-2"
+                              className="px-3 py-1 bg-secondary text-white rounded-lg text-[9px] font-black uppercase hover:bg-blue-600 transition flex items-center gap-1"
                             >
-                              <Star size={12} fill="white" /> Đánh giá
+                              <Star size={10} fill="white" /> Đánh giá
                             </button>
                           )}
-
-                          {/* PER-ITEM RETURN BUTTON */}
                           {returnDeadlineStatus.eligible &&
-                            (!item.returnStatus ||
-                              item.returnStatus === "NONE") && (
+                            (!item.returnStatus || item.returnStatus === "NONE") && (
                               <button
                                 onClick={() => openReturnDialog(item)}
-                                className="px-6 py-2 bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-200 transition flex items-center gap-2"
+                                className="px-3 py-1 bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-lg text-[9px] font-black uppercase hover:bg-yellow-200 transition flex items-center gap-1"
                               >
-                                <RefreshCw size={12} /> Đổi/Trả
+                                <RefreshCw size={10} /> Đổi/Trả
                               </button>
-                            )}
-
-                          {/* RETURN STATUS BADGE */}
-                          {item.returnStatus &&
-                            item.returnStatus !== "NONE" && (
-                              <div className="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                <Info size={12} />
-                                {item.returnStatus === "HAS_REQUEST" &&
-                                  "Đang chờ duyệt"}
-                                {item.returnStatus === "EXCHANGED" &&
-                                  "Đã đổi hàng"}
-                                {item.returnStatus === "REFUNDED" &&
-                                  "Đã hoàn tiền"}
-                                {item.returnStatus === "REJECTED" &&
-                                  "Từ chối đổi/trả"}
-                              </div>
                             )}
                         </div>
                       )}
                     </div>
+                    {/* Return status badge */}
+                    {item.returnStatus && item.returnStatus !== "NONE" && (
+                      <span className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        item.returnStatus === "EXCHANGED" ? "bg-green-100 text-green-700" :
+                        item.returnStatus === "REFUNDED" ? "bg-blue-100 text-blue-700" :
+                        item.returnStatus === "HAS_REQUEST" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-gray-100 text-gray-600"
+                      }`}>
+                        {item.returnStatus === "EXCHANGED" ? "Đã đổi" :
+                         item.returnStatus === "REFUNDED" ? "Đã hoàn tiền" :
+                         item.returnStatus === "HAS_REQUEST" ? "Đang xử lý" :
+                         item.returnStatus}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Footer với hotline và nút hành động */}
-          <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 text-secondary rounded-xl">
-                <Smartphone size={24} />
-              </div>
-              <div>
-                <p className="text-[11px] font-black text-gray-800 uppercase">
-                  Yêu cầu hỗ trợ?
-                </p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-widest">
-                  Hotline 1900 1234 phục vụ 24/7
-                </p>
-              </div>
-            </div>
-            {!isStaff && (
-              <div className="flex flex-wrap gap-3">
-                {canCancelOrder && (
-                  <button
-                    onClick={() => setShowCancelModal(true)}
-                    className="px-6 py-3 bg-red-100 text-red-600 border-2 border-red-200 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-200 transition"
-                  >
-                    <X size={14} /> Hủy đơn
-                  </button>
-                )}
-
-                {/* NOTE: Per-item return buttons are now in the product list above */}
-
-                {order.status === OrderStatus.RETURN_REQUESTED && (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="px-6 py-3 bg-red-50 text-red-600 border-2 border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-200 transition"
-                  >
-                    <Trash2 size={14} /> Hủy yêu cầu
-                  </button>
-                )}
-              </div>
-            )}
+      {/* Footer với hotline và nút hành động - Bên dưới */}
+      <div className="mt-6 bg-white rounded-3xl shadow-lg border border-gray-100 p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-blue-50 text-secondary rounded-xl">
+            <Smartphone size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-800 uppercase">
+              Cần hỗ trợ?
+            </p>
+            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+              Hotline 1900 1234 - 24/7
+            </p>
           </div>
         </div>
+        {!isStaff && (
+          <div className="flex flex-wrap gap-2">
+            {canCancelOrder && (
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="px-4 py-2 bg-red-100 text-red-600 border border-red-200 rounded-xl text-[9px] font-black uppercase flex items-center gap-1.5 hover:bg-red-200 transition"
+              >
+                <X size={12} /> Hủy đơn
+              </button>
+            )}
+
+            {order.status === OrderStatus.RETURN_REQUESTED && (
+              <button
+                onClick={() => setShowCancelConfirm(true)}
+                className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[9px] font-black uppercase flex items-center gap-1.5 hover:bg-red-200 transition"
+              >
+                <Trash2 size={12} /> Hủy yêu cầu
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Return Info Card - nếu có */}

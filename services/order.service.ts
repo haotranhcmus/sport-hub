@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { OrderStatus } from "../constants/enums";
 import { Order, User, ReturnRequestData, StockIssue } from "../types";
 import { withUpdatedAt } from "./shared.service";
+import { NotificationHelpers } from "./notification.service";
 
 // Circular dependency workaround - will be injected
 let returnRequestService: any;
@@ -171,6 +172,20 @@ export const orderService = {
     }
 
     console.log("🎉 [ORDER CREATE] Hoàn tất đơn hàng:", order.orderCode);
+
+    // 🔔 Notify admins about new order
+    try {
+      await NotificationHelpers.newOrder(
+        order.orderCode,
+        order.customerName,
+        order.totalAmount
+      );
+      console.log("🔔 [ORDER CREATE] Đã gửi thông báo cho admin");
+    } catch (notifyError) {
+      console.error("⚠️ [ORDER CREATE] Lỗi gửi thông báo:", notifyError);
+      // Don't throw - order was created successfully
+    }
+
     return order;
   },
 
@@ -187,6 +202,37 @@ export const orderService = {
       .eq("id", order.id);
 
     if (error) throw new Error(error.message);
+
+    // 🔔 Notify customer about status change
+    try {
+      // Map status to notification type
+      const statusNotifyMap: Record<OrderStatus, "confirmed" | "shipping" | "delivered" | "cancelled" | null> = {
+        [OrderStatus.PENDING_PAYMENT]: null,
+        [OrderStatus.PENDING_CONFIRMATION]: null,
+        [OrderStatus.PACKING]: "confirmed",
+        [OrderStatus.SHIPPING]: "shipping",
+        [OrderStatus.COMPLETED]: "delivered",
+        [OrderStatus.CANCELLED]: "cancelled",
+        [OrderStatus.DELIVERY_FAILED]: null,
+        [OrderStatus.RETURN_REQUESTED]: null,
+        [OrderStatus.RETURN_PROCESSING]: null,
+        [OrderStatus.RETURN_COMPLETED]: null,
+      };
+
+      const notifyType = statusNotifyMap[newStatus];
+      if (notifyType && order.customerId) {
+        await NotificationHelpers.orderStatusUpdate(
+          order.customerId,
+          order.orderCode,
+          notifyType
+        );
+        console.log(`🔔 [ORDER] Notified customer about status: ${notifyType}`);
+      }
+    } catch (notifyError) {
+      console.error("⚠️ [ORDER] Error sending notification:", notifyError);
+      // Don't throw - status was updated successfully
+    }
+
     return true;
   },
 

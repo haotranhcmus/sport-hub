@@ -55,23 +55,32 @@ export const SidebarSubItem = ({
   icon,
   label,
   active,
+  badge,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   active: boolean;
+  badge?: number;
   onClick: () => void;
 }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-3 w-full pl-10 pr-4 py-2.5 rounded-lg text-sm font-medium transition ${
+    className={`flex items-center justify-between gap-3 w-full pl-10 pr-4 py-2.5 rounded-lg text-sm font-medium transition ${
       active
         ? "bg-secondary/10 text-secondary"
         : "text-gray-600 hover:bg-gray-50"
     }`}
   >
-    {icon}
-    {label}
+    <div className="flex items-center gap-3">
+      {icon}
+      {label}
+    </div>
+    {badge !== undefined && badge > 0 && (
+      <span className="px-2 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full min-w-[20px] text-center animate-pulse">
+        {badge > 99 ? "99+" : badge}
+      </span>
+    )}
   </button>
 );
 
