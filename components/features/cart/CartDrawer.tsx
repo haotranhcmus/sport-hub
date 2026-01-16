@@ -193,21 +193,13 @@ export const CartDrawer = () => {
                 {totalPrice.toLocaleString()}đ
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleNavigate("/cart")}
-                className="py-4 border-2 border-gray-200 rounded-2xl font-black text-xs uppercase tracking-widest text-gray-600 hover:bg-white transition"
-              >
-                Chi tiết
-              </button>
-              <button
-                disabled={!isValid}
-                onClick={() => handleNavigate("/checkout")}
-                className="py-4 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/30 flex justify-center items-center gap-2 hover:bg-blue-600 transition disabled:opacity-30 disabled:shadow-none"
-              >
-                THANH TOÁN <ArrowRight size={16} />
-              </button>
-            </div>
+            <button
+              disabled={!isValid}
+              onClick={() => handleNavigate("/checkout")}
+              className="w-full py-4 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/30 flex justify-center items-center gap-2 hover:bg-blue-600 transition disabled:opacity-30 disabled:shadow-none"
+            >
+              THANH TOÁN <ArrowRight size={16} />
+            </button>
           </div>
         )}
       </div>

@@ -86,6 +86,7 @@ export const OrderDetailPage = () => {
   // Review States
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showViewReviewModal, setShowViewReviewModal] = useState(false);
+  const [showReviewSuccessModal, setShowReviewSuccessModal] = useState(false);
   const [reviewingItem, setReviewingItem] = useState<OrderItem | null>(null);
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
@@ -285,8 +286,8 @@ export const OrderDetailPage = () => {
       console.log("✅ Item marked as reviewed in Order");
 
       setShowReviewModal(false);
-      alert("Cảm ơn bạn đã đánh giá sản phẩm!");
       await fetchOrder();
+      setShowReviewSuccessModal(true);
       console.log("✅ Review submitted successfully!");
     } catch (err) {
       console.error("❌ Error submitting review:", err);
@@ -766,12 +767,6 @@ export const OrderDetailPage = () => {
             <div className="flex items-center gap-3">
               <Package size={18} className="text-secondary" />
               <span className="font-bold text-gray-800">SportHub</span>
-              <button className="text-xs text-secondary hover:underline flex items-center gap-1">
-                <MessageSquare size={12} /> Chat
-              </button>
-              <button className="text-xs text-gray-500 hover:underline flex items-center gap-1">
-                <ExternalLink size={12} /> Xem Shop
-              </button>
             </div>
           </div>
 
@@ -924,6 +919,20 @@ export const OrderDetailPage = () => {
                       <Star size={16} /> Đánh Giá
                     </button>
                   )}
+                  {/* Nút Xem Đánh Giá - hiển thị khi có sản phẩm đã đánh giá */}
+                  {order.items.some((item) => item.isReviewed) && (
+                    <button
+                      onClick={() => {
+                        const reviewed = order.items.find(
+                          (item) => item.isReviewed
+                        );
+                        if (reviewed) openViewReviewModal(reviewed);
+                      }}
+                      className="px-6 py-2.5 border border-secondary text-secondary rounded-lg font-medium text-sm hover:bg-blue-50 transition flex items-center gap-2"
+                    >
+                      <Star size={16} /> Xem Đánh Giá
+                    </button>
+                  )}
                   {returnDeadlineStatus.eligible && (
                     <button
                       onClick={() => {
@@ -968,11 +977,6 @@ export const OrderDetailPage = () => {
               >
                 Mua Lại
               </Link>
-
-              {/* Contact */}
-              <button className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition">
-                Liên Hệ Người Bán
-              </button>
             </div>
           </div>
         </div>
@@ -1216,6 +1220,43 @@ export const OrderDetailPage = () => {
                   "GỬI ĐÁNH GIÁ"
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ĐÁNH GIÁ THÀNH CÔNG */}
+      {showReviewSuccessModal && reviewingItem && (
+        <div className="fixed inset-0 z-[350] flex items-center justify-center p-4 backdrop-blur-md bg-black/60">
+          <div className="bg-white w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 size={40} className="text-green-600" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight mb-3">
+                Đánh Giá Thành Công!
+              </h3>
+              <p className="text-sm text-gray-500 mb-8">
+                Cảm ơn bạn đã dành thời gian đánh giá sản phẩm. Đánh giá của bạn
+                sẽ giúp ích cho người mua khác.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => {
+                    setShowReviewSuccessModal(false);
+                    openViewReviewModal(reviewingItem);
+                  }}
+                  className="py-4 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition flex items-center justify-center gap-2"
+                >
+                  <Star size={16} /> Xem Đánh Giá
+                </button>
+                <button
+                  onClick={() => setShowReviewSuccessModal(false)}
+                  className="py-4 border-2 border-gray-200 text-gray-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition"
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         </div>

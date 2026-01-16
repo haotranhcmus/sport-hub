@@ -24,8 +24,9 @@ export const useProducts = () => {
   return useQuery({
     queryKey: productKeys.lists(),
     queryFn: () => api.products.list(),
-    staleTime: 5 * 60 * 1000, // 5 minutes - products don't change often
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    staleTime: 30 * 1000, // 30 seconds - để cập nhật tồn kho nhanh hơn, tránh overselling
+    gcTime: 5 * 60 * 1000, // 5 minutes cache
+    refetchOnWindowFocus: true, // Refetch khi user quay lại tab
   });
 };
 
@@ -39,7 +40,8 @@ export const useProductDetail = (slug: string) => {
     queryKey: productKeys.detail(slug),
     queryFn: () => api.products.getDetail(slug),
     enabled: !!slug, // Only run if slug exists
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 seconds - để cập nhật tồn kho nhanh hơn
+    refetchOnWindowFocus: true, // Refetch khi user quay lại tab
   });
 };
 

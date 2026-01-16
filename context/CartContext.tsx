@@ -22,7 +22,8 @@ interface CartContextType {
   addToCart: (
     product: Product,
     variant: ProductVariant,
-    quantity: number
+    quantity: number,
+    skipOpenCart?: boolean
   ) => void;
   removeFromCart: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
@@ -171,7 +172,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   const addToCart = (
     product: Product,
     variant: ProductVariant,
-    quantity: number
+    quantity: number,
+    skipOpenCart: boolean = false
   ) => {
     // ✅ Validate stock before adding to cart
     const realProduct = latestProducts.find((p) => p.id === product.id);
@@ -251,7 +253,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         ];
       });
     }
-    setIsOpen(true);
+    if (!skipOpenCart) {
+      setIsOpen(true);
+    }
   };
 
   const removeFromCart = (variantId: string) => {

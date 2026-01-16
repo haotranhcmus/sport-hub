@@ -415,88 +415,88 @@ export const AdminDashboard = () => {
           </div>
 
           {activeView === "dashboard" && (
-            <ErrorBoundary view="Dashboard">
+            <AdminErrorBoundary view="Dashboard">
               <DashboardView />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "sales" && (
-            <ErrorBoundary view="Orders">
+            <AdminErrorBoundary view="Orders">
               <OrderListManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "returns" && (
-            <ErrorBoundary view="Returns">
+            <AdminErrorBoundary view="Returns">
               <ReturnManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "chat" && (
-            <ErrorBoundary view="Chat">
+            <AdminErrorBoundary view="Chat">
               <div className="px-6 md:px-8 pb-6">
                 <AdminChatDashboard />
               </div>
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "reports" && (
-            <ErrorBoundary view="Reports">
+            <AdminErrorBoundary view="Reports">
               <ReportsManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "products" && (
-            <ErrorBoundary view="Products">
+            <AdminErrorBoundary view="Products">
               <ProductManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "size_guides" && (
-            <ErrorBoundary view="Size Guides">
+            <AdminErrorBoundary view="Size Guides">
               <SizeGuideManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "product_config" && (
-            <ErrorBoundary view="Product Config">
+            <AdminErrorBoundary view="Product Config">
               <ProductConfigManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "suppliers" && (
-            <ErrorBoundary view="Suppliers">
+            <AdminErrorBoundary view="Suppliers">
               <SupplierManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "inventory" && (
-            <ErrorBoundary view="Inventory">
+            <AdminErrorBoundary view="Inventory">
               <InventoryManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "stock_issue" && (
-            <ErrorBoundary view="Stock Issue">
+            <AdminErrorBoundary view="Stock Issue">
               <StockIssueManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "stock_count" && (
-            <ErrorBoundary view="Stock Count">
+            <AdminErrorBoundary view="Stock Count">
               <StocktakeManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "inventory_report" && (
-            <ErrorBoundary view="Inventory Report">
+            <AdminErrorBoundary view="Inventory Report">
               <InventoryReportManager
                 onGoToStockEntry={() => setActiveView("inventory")}
               />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "system_config" && (
-            <ErrorBoundary view="System Config">
+            <AdminErrorBoundary view="System Config">
               <SystemConfigManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "audit_logs" && (
-            <ErrorBoundary view="Audit Logs">
+            <AdminErrorBoundary view="Audit Logs">
               <AuditLogsView />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
           {activeView === "system" && (
-            <ErrorBoundary view="System">
+            <AdminErrorBoundary view="System">
               <SystemManager />
-            </ErrorBoundary>
+            </AdminErrorBoundary>
           )}
         </main>
       </div>
@@ -504,54 +504,50 @@ export const AdminDashboard = () => {
   );
 };
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; view: string },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode; view: string }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+// Simple Error Boundary using class with explicit typing
+// Simple Error Fallback wrapper - React 19 compatible
+const AdminErrorBoundary: React.FC<{
+  children: React.ReactNode;
+  view: string;
+}> = ({ children, view }) => {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error(`❌ [AdminErrorBoundary - ${view}] Error:`, event.error);
+      setError(event.error);
+      setHasError(true);
+      event.preventDefault();
+    };
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
+  }, [view]);
 
-  componentDidCatch(error: Error, errorInfo: any) {
-    console.error(
-      `❌ [ErrorBoundary - ${this.props.view}] Error caught:`,
-      error
+  if (hasError) {
+    return (
+      <div className="p-10 bg-red-50 rounded-3xl border-2 border-red-200">
+        <h2 className="text-2xl font-black text-red-600 mb-4">
+          ⚠️ LỖI: {view}
+        </h2>
+        <p className="text-sm text-red-800 font-bold mb-4">
+          {error?.message || "Unknown error"}
+        </p>
+        <pre className="text-xs bg-white p-4 rounded-xl overflow-auto max-h-96 text-red-900">
+          {error?.stack}
+        </pre>
+        <button
+          onClick={() => {
+            setHasError(false);
+            setError(null);
+          }}
+          className="mt-4 px-6 py-3 bg-red-600 text-white rounded-xl font-black uppercase"
+        >
+          Thử lại
+        </button>
+      </div>
     );
-    console.error(
-      `📍 [ErrorBoundary - ${this.props.view}] Error info:`,
-      errorInfo
-    );
   }
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-10 bg-red-50 rounded-3xl border-2 border-red-200">
-          <h2 className="text-2xl font-black text-red-600 mb-4">
-            ⚠️ LỖI: {this.props.view}
-          </h2>
-          <p className="text-sm text-red-800 font-bold mb-4">
-            {this.state.error?.message || "Unknown error"}
-          </p>
-          <pre className="text-xs bg-white p-4 rounded-xl overflow-auto max-h-96 text-red-900">
-            {this.state.error?.stack}
-          </pre>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="mt-4 px-6 py-3 bg-red-600 text-white rounded-xl font-black uppercase"
-          >
-            Thử lại
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+  return <>{children}</>;
+};

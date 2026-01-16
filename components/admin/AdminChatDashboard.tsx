@@ -1003,7 +1003,7 @@ export const AdminChatDashboard: React.FC = () => {
 
       {/* Confirmation Modal */}
       {showCloseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
             <div
               className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${

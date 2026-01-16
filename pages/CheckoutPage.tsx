@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
@@ -92,6 +93,7 @@ const WARDS: Record<string, { code: string; name: string }[]> = {
 const COD_LIMIT = 10000000; // 10 triệu
 
 export const CheckoutPage = () => {
+  const queryClient = useQueryClient();
   const { items, totalPrice, clearCart } = useCart();
   const { user, isAuthenticated, addAddress } = useAuth();
   const navigate = useNavigate();
@@ -441,7 +443,18 @@ export const CheckoutPage = () => {
   };
 
   const finalizeOrder = async () => {
-    if (!selectedAddress) return;
+    // Validate address completely
+    if (
+      !selectedAddress ||
+      !selectedAddress.name?.trim() ||
+      !selectedAddress.phone?.trim()
+    ) {
+      alert(
+        "Thông tin địa chỉ không hợp lệ. Vui lòng kiểm tra lại tên và số điện thoại."
+      );
+      setIsProcessingOrder(false);
+      return;
+    }
 
     setIsProcessingOrder(true);
     // Tạo mã đơn ngẫu nhiên chuyên nghiệp
@@ -507,6 +520,85 @@ export const CheckoutPage = () => {
         console.log("📦 [CHECKOUT] Trừ kho cho đơn hàng COD");
         await api.products.deductStock(newOrder.items);
 
+        // 📧 Giả lập gửi email xác nhận đơn hàng
+        const emailContent = {
+          to: isAuthenticated
+            ? user?.email
+            : selectedAddress?.email || "guest@example.com",
+          subject: `[SportHub] Xác nhận đơn hàng #${newOrder.orderCode}`,
+          body: `
+═══════════════════════════════════════════════════════════════════
+                    📧 EMAIL XÁC NHẬN ĐƠN HÀNG - SPORTHUB
+═══════════════════════════════════════════════════════════════════
+
+Xin chào ${newOrder.customerName},
+
+Cảm ơn bạn đã đặt hàng tại SportHub! Đơn hàng của bạn đã được tiếp nhận.
+
+📋 THÔNG TIN ĐƠN HÀNG:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Mã đơn hàng: ${newOrder.orderCode}
+Ngày đặt: ${new Date(newOrder.createdAt).toLocaleString("vi-VN")}
+Phương thức thanh toán: ${
+            newOrder.paymentMethod === "COD"
+              ? "Thanh toán khi nhận hàng (COD)"
+              : "Thanh toán online"
+          }
+
+📦 SẢN PHẨM:
+${newOrder.items
+  .map(
+    (item: any, i: number) =>
+      `  ${i + 1}. ${item.productName}
+     Phân loại: ${item.color} - ${item.size}
+     Số lượng: ${item.quantity}
+     Đơn giá: ${item.unitPrice?.toLocaleString()}đ
+     Thành tiền: ${((item.unitPrice || 0) * item.quantity).toLocaleString()}đ`
+  )
+  .join("\n")}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phí vận chuyển: ${newOrder.shippingFee?.toLocaleString()}đ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 TỔNG THANH TOÁN: ${newOrder.totalAmount?.toLocaleString()}đ
+
+📍 ĐỊA CHỈ GIAO HÀNG:
+${newOrder.customerName}
+${newOrder.customerPhone}
+${newOrder.customerAddress}
+
+🔗 XEM CHI TIẾT ĐƠN HÀNG:
+${window.location.origin}/#/orders/${newOrder.orderCode}
+
+📱 TRA CỨU ĐƠN HÀNG:
+Sử dụng SĐT ${newOrder.customerPhone} và mã đơn ${newOrder.orderCode} 
+để tra cứu tại: ${window.location.origin}/#/tracking
+
+═══════════════════════════════════════════════════════════════════
+Cảm ơn bạn đã tin tưởng SportHub!
+Hotline hỗ trợ: 1900 1234 (24/7)
+═══════════════════════════════════════════════════════════════════
+          `.trim(),
+        };
+
+        console.log("📧 [EMAIL SERVICE] Đang gửi email xác nhận đơn hàng...");
+        console.log(
+          "═══════════════════════════════════════════════════════════════════"
+        );
+        console.log("📬 TO:", emailContent.to);
+        console.log("📌 SUBJECT:", emailContent.subject);
+        console.log(
+          "───────────────────────────────────────────────────────────────────"
+        );
+        console.log(emailContent.body);
+        console.log(
+          "═══════════════════════════════════════════════════════════════════"
+        );
+        console.log("✅ [EMAIL SERVICE] Email đã được gửi thành công!");
+
+        // Invalidate products cache để cập nhật tồn kho trên UI
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+
         // Hiển thị Modal thay vì alert
         setSuccessOrder(newOrder);
         setShowSuccessModal(true);
@@ -531,7 +623,7 @@ export const CheckoutPage = () => {
   };
 
   if (items.length === 0 && !isProcessingOrder && !showSuccessModal) {
-    navigate("/cart");
+    navigate("/products");
     return null;
   }
 
@@ -547,7 +639,7 @@ export const CheckoutPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
           <Link
-            to="/cart"
+            to="/products"
             className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-gray-50 transition"
           >
             <ArrowLeft size={24} />
@@ -894,20 +986,72 @@ export const CheckoutPage = () => {
             </div>
 
             <div className="space-y-6 text-left mb-10">
+              {/* Thông báo email - khác nhau cho member và guest */}
               <div className="flex gap-4 items-start">
                 <div className="p-3 bg-blue-50 text-secondary rounded-2xl shrink-0">
                   <Mail size={18} />
                 </div>
                 <div>
                   <p className="text-xs font-black text-gray-800 uppercase">
-                    Xác nhận đơn hàng
+                    {isAuthenticated
+                      ? "Xác nhận đơn hàng"
+                      : "📧 Email xác nhận đã gửi"}
                   </p>
                   <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed">
-                    Thông tin chi tiết đã được gửi tới email{" "}
-                    <b className="text-gray-700">{user?.email || ""}</b>
+                    {isAuthenticated ? (
+                      <>
+                        Thông tin chi tiết đã được gửi tới email{" "}
+                        <b className="text-gray-700">{user?.email || ""}</b>
+                      </>
+                    ) : (
+                      <>
+                        Hệ thống đã gửi email xác nhận đến{" "}
+                        <b className="text-gray-700">
+                          {successOrder.guestEmail ||
+                            selectedAddress?.email ||
+                            "email của bạn"}
+                        </b>
+                        . Vui lòng kiểm tra hộp thư (kể cả Spam).
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
+
+              {/* Link xem chi tiết đơn hàng cho guest */}
+              {!isAuthenticated && (
+                <div className="flex gap-4 items-start">
+                  <div className="p-3 bg-green-50 text-green-600 rounded-2xl shrink-0">
+                    <ExternalLink size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-black text-gray-800 uppercase">
+                      🔗 Xem chi tiết đơn hàng
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 leading-relaxed mb-2">
+                      Nhấn vào link bên dưới hoặc sao chép để xem đơn hàng:
+                    </p>
+                    <div className="bg-gray-100 rounded-xl p-3 flex items-center gap-2">
+                      <code className="text-[9px] text-gray-600 flex-1 break-all">
+                        {`${window.location.origin}/#/orders/${successOrder.orderCode}`}
+                      </code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            `${window.location.origin}/#/orders/${successOrder.orderCode}`
+                          );
+                          alert("Đã sao chép link!");
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-secondary transition shrink-0"
+                        title="Sao chép link"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-4 items-start">
                 <div className="p-3 bg-blue-50 text-secondary rounded-2xl shrink-0">
                   <Smartphone size={18} />
@@ -928,12 +1072,21 @@ export const CheckoutPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                onClick={() => navigate("/tracking")}
-                className="py-5 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-black transition"
-              >
-                <ExternalLink size={16} /> TRA CỨU NGAY
-              </button>
+              {!isAuthenticated ? (
+                <button
+                  onClick={() => navigate(`/orders/${successOrder.orderCode}`)}
+                  className="py-5 bg-secondary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition"
+                >
+                  <ExternalLink size={16} /> XEM ĐƠN HÀNG
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/tracking")}
+                  className="py-5 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-black transition"
+                >
+                  <ExternalLink size={16} /> TRA CỨU NGAY
+                </button>
+              )}
               <button
                 onClick={() => navigate("/products")}
                 className="py-5 bg-white border-2 border-gray-100 text-gray-600 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-50 transition"
@@ -945,11 +1098,11 @@ export const CheckoutPage = () => {
         </div>
       )}
 
-      {/* Address Selection Modal - Shopee Style */}
+      {/* Address Selection Modal - SportHub Style */}
       {showAddressModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden animate-in zoom-in-95">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50 to-red-50">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-slate-50">
               <div>
                 <h3 className="font-black text-xl text-gray-800">
                   Địa Chỉ Của Tôi

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Product } from "../../../types";
 import { formatCurrency } from "../../../utils";
 import { usePrefetchProduct } from "../../../hooks/useProductsQuery";
+import { Star } from "lucide-react";
 
 export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const prefetchProduct = usePrefetchProduct();
@@ -22,10 +23,11 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   return (
     <Link
       to={`/products/${product.slug}`}
-      className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition border border-gray-100 flex flex-col group"
+      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 hover:border-blue-400 flex flex-col group"
       onMouseEnter={() => prefetchProduct(product.slug)}
     >
-      <div className="relative aspect-square overflow-hidden bg-gray-100">
+      {/* Image Container */}
+      <div className="relative aspect-square overflow-hidden bg-gray-50">
         <img
           src={imageUrl}
           alt={product.name}
@@ -39,32 +41,54 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
             }
           }}
         />
+        {/* Discount Badge - SportHub Style */}
         {discount > 0 && (
-          <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+          <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
             -{discount}%
-          </span>
+          </div>
+        )}
+        {/* Free Shipping Badge */}
+        {product.freeShipping && (
+          <div className="absolute bottom-2 left-2">
+            <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 font-medium rounded-full">
+              Free Ship
+            </span>
+          </div>
         )}
       </div>
-      <div className="p-4 flex-grow flex flex-col">
-        <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2 group-hover:text-secondary transition">
+
+      {/* Content */}
+      <div className="p-2.5 flex-grow flex flex-col">
+        {/* Product Name */}
+        <h3 className="text-sm text-gray-800 mb-2 line-clamp-2 leading-snug min-h-[40px] font-medium">
           {product.name}
         </h3>
+
+        {/* Price Row */}
         <div className="mt-auto">
-          <div className="flex items-center gap-2">
-            {product.promotionalPrice ? (
-              <>
-                <span className="text-lg font-bold text-red-600">
-                  {formatCurrency(product.promotionalPrice)}
-                </span>
-                <span className="text-sm text-gray-400 line-through">
-                  {formatCurrency(product.basePrice)}
-                </span>
-              </>
-            ) : (
-              <span className="text-lg font-bold text-gray-900">
-                {formatCurrency(product.basePrice)}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-blue-600 font-bold text-base">
+                {(product.promotionalPrice || product.basePrice)
+                  .toLocaleString()
+                  .replace(/,/g, ".")}
+                đ
               </span>
-            )}
+              {product.promotionalPrice && (
+                <span className="text-xs text-gray-400 line-through">
+                  {product.basePrice.toLocaleString().replace(/,/g, ".")}đ
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Rating & Sold */}
+          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+            <div className="flex items-center gap-1">
+              <Star size={12} fill="#f59e0b" className="text-amber-500" />
+              <span className="font-medium text-gray-700">4.8</span>
+            </div>
+            <span>Đã bán {product.totalSold || 0}</span>
           </div>
         </div>
       </div>

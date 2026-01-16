@@ -564,6 +564,30 @@ const ProductFormModal = ({
       return;
     }
 
+    // ✅ Validate price adjustment - ensure final price > 0
+    const basePrice = formData.promotionalPrice || formData.basePrice || 0;
+    const invalidVariants = variants.filter((v) => {
+      const finalPrice = basePrice + v.priceAdjustment;
+      return finalPrice < 1000;
+    });
+
+    if (invalidVariants.length > 0) {
+      alert(
+        `❌ Có ${invalidVariants.length} biến thể có giá không hợp lệ!\n\n` +
+          `Các biến thể sau có giá cuối < 1,000đ:\n` +
+          invalidVariants
+            .map(
+              (v) =>
+                `• ${v.color} / ${v.size}: ${(
+                  basePrice + v.priceAdjustment
+                ).toLocaleString()}đ`
+            )
+            .join("\n") +
+          `\n\nVui lòng điều chỉnh chênh lệch giá để giá cuối >= 1,000đ`
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await api.products.update(savedProduct.id, formData, currentUser);
@@ -945,6 +969,31 @@ const VariantManager = ({
       return;
     }
 
+    // ✅ Validate price adjustment - ensure final price > 0
+    const basePrice =
+      parentFormData.promotionalPrice || parentFormData.basePrice || 0;
+    const invalidVariants = variants.filter((v) => {
+      const finalPrice = basePrice + v.priceAdjustment;
+      return finalPrice < 1000;
+    });
+
+    if (invalidVariants.length > 0) {
+      alert(
+        `❌ Có ${invalidVariants.length} biến thể có giá không hợp lệ!\n\n` +
+          `Các biến thể sau có giá cuối < 1,000đ:\n` +
+          invalidVariants
+            .map(
+              (v) =>
+                `• ${v.color} / ${v.size}: ${(
+                  basePrice + v.priceAdjustment
+                ).toLocaleString()}đ`
+            )
+            .join("\n") +
+          `\n\nVui lòng điều chỉnh chênh lệch giá để giá cuối >= 1,000đ`
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await api.products.update(product.id, parentFormData, currentUser);
@@ -1079,19 +1128,47 @@ const VariantManager = ({
                     />
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <input
-                        type="number"
-                        className="w-28 bg-white border border-gray-200 rounded-xl p-2.5 text-right font-black text-sm outline-none focus:ring-2 focus:ring-secondary/10 shadow-sm text-slate-900"
-                        value={v.priceAdjustment}
-                        onChange={(e) => {
-                          const newV = [...variants];
-                          newV[i].priceAdjustment =
-                            parseInt(e.target.value) || 0;
-                          setVariants(newV);
-                        }}
-                      />
-                    </div>
+                    {(() => {
+                      // Calculate minimum allowed price adjustment
+                      const basePrice =
+                        parentFormData.promotionalPrice ||
+                        parentFormData.basePrice ||
+                        0;
+                      const minAdjustment = -(basePrice - 1000); // Giá tối thiểu 1,000đ
+                      const finalPrice = basePrice + v.priceAdjustment;
+                      const isInvalid = finalPrice < 1000;
+
+                      return (
+                        <div className="flex flex-col items-end gap-1">
+                          <input
+                            type="number"
+                            className={`w-28 bg-white border rounded-xl p-2.5 text-right font-black text-sm outline-none shadow-sm text-slate-900 ${
+                              isInvalid
+                                ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                : "border-gray-200 focus:ring-2 focus:ring-secondary/10"
+                            }`}
+                            value={v.priceAdjustment}
+                            onChange={(e) => {
+                              const newV = [...variants];
+                              newV[i].priceAdjustment =
+                                parseInt(e.target.value) || 0;
+                              setVariants(newV);
+                            }}
+                          />
+                          {isInvalid && (
+                            <span className="text-[9px] text-red-500 font-bold">
+                              Giá cuối: {finalPrice.toLocaleString()}đ (tối
+                              thiểu 1,000đ)
+                            </span>
+                          )}
+                          {!isInvalid && v.priceAdjustment !== 0 && (
+                            <span className="text-[9px] text-gray-400">
+                              Giá cuối: {finalPrice.toLocaleString()}đ
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-5 text-center">
                     <button

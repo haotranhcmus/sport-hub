@@ -146,7 +146,7 @@ export interface ProductAttribute {
   code: string;
   categoryIds: string[];
   values: string[];
-  type: "variant" | "info";
+  type: "variant" | "info" | "specification";
 }
 
 export interface ProductVariant {
@@ -183,6 +183,7 @@ export interface Product {
   basePrice: number;
   promotionalPrice?: number;
   thumbnailUrl: string;
+  imageUrls?: string[]; // ✅ Gallery images for product detail page
   status: ProductStatus;
   categoryId: string;
   brandId: string;
@@ -190,6 +191,8 @@ export interface Product {
   brand?: Brand;
   variants: ProductVariant[];
   totalSold: number;
+  reviewCount?: number; // ✅ Cached review count
+  averageRating?: number; // ✅ Cached average rating
   allowReturn?: boolean;
   returnPeriod?: number;
   freeShipping?: boolean;

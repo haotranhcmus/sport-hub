@@ -7,7 +7,6 @@ import { Layout } from "./components/layout/Layout";
 import { HomePage } from "./pages/HomePage";
 import { ProductListPage } from "./pages/ProductListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
-import { CartPage } from "./pages/CartPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage, ForgotPasswordPage } from "./pages/AuthPages";
@@ -94,14 +93,6 @@ const App = () => {
                     <StaffRedirect>
                       <ProductDetailPage />
                     </StaffRedirect>
-                  }
-                />
-                <Route
-                  path="/cart"
-                  element={
-                    <ProtectedRoute allowGuest>
-                      <CartPage />
-                    </ProtectedRoute>
                   }
                 />
                 <Route
